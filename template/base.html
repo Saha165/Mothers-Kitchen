@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mother's Kitchen</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="logo.png">
+</head>
+
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="home.html" class="logo-link">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mother's Kitchen logo" class="logo-img">
+            <span class="brand-name">Mother's Kitchen</span>
+        </a>
+
+        <nav class="main-nav">
+            {% if session.get('account_type') == 'admin' %}
+                <a href="adminDashboard.html">Dashboard</a>
+                <a href="adminMagangeMenu.html">Manage Menu</a>
+                <a href="adminReports.html">Reports</a>
+                <a href="authLogout.html">Logout</a>
+            {% elif session.get('account_type') == 'customer' %}
+                <a href="home.html">Home</a>
+                <a href="menu.html">Menu</a>
+                <a href="cart.html">Cart</a>
+                <a href="profile.html">Profile</a>
+                <a href="authLogout.html">Logout</a>
+            {% else %}
+                <a href="home.html">Home</a>
+                <a href="about.html">About Us</a>
+                <a href="authLogin.html">Login</a>
+                <a href="authSignup.html">Sign Up</a>
+            {% endif %}
+        </nav>
+    </div>
+</header>
+
+<main class="site-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash-alert flash-{{ category }}">
+                        {{ message }}
+                        <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+    <p><a href="about.html">About Us</a></p>
+    <p>&copy; {{ current_year }} Mother's Kitchen &mdash; Home-Made &amp; Heart-Made.</p>
+</footer>
+</body>
+</html>
