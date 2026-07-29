@@ -54,6 +54,7 @@ def login_required(view_function):
 
     return wrapper
 
+# admin required function
 def admin_required(view_function):
     @wraps(view_function)
     def wrapper(*args, **kwargs):
@@ -242,6 +243,12 @@ def cart():
 def profile():
     user = User.query.get_or_404(session["user_id"])
     return render_template("profile.html")
+
+@app.route("/admin/profile")
+@admin_required
+def admin_profile():
+    user = User.query.get_or_404(session["user_id"])
+    return render_template("admin_profile.html")
 
 
 # Track Order

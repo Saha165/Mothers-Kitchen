@@ -26,6 +26,11 @@ def run_seed_if_empty():
     demo_customer.set_password("Customer@123")
     db.session.add(demo_customer)
 
+    db.session.commit()
+    print(
+        "Seed data created: 1 admin, 1 demo customer, "
+    )
+
 
 
 if __name__ == "__main__":

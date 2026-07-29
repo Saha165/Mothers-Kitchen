@@ -61,6 +61,11 @@ a:hover { text-decoration: underline; }
     gap: 1rem;
 }
 
+.login-page{
+    display: flex;
+    gap: 20px;
+}
+
 .logo-link {
     display: flex;
     align-items: center;
@@ -73,6 +78,16 @@ a:hover { text-decoration: underline; }
     border-radius: 50%;
     object-fit: cover;
     background: var(--color-cream);
+}
+
+.login-logo{
+    position: relative;
+    top: 25px;
+    left: 25px;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .brand-name {
@@ -276,10 +291,11 @@ a:hover { text-decoration: underline; }
     font-size: 2.3rem;
     margin: 0 0 0.1rem;
 }
-.auth-page-hero .auth-card { margin-top: 1.75rem; }
+.auth-page-hero .auth-card {margin-top: 1.75rem;}
 
 .auth-card {
-    max-width: 460px;
+    position:relative;
+    max-width: 750px;
     margin: 0 auto;
     background: var(--color-coral);
     border-radius: var(--radius-lg);

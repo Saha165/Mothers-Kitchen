@@ -2,43 +2,45 @@
 {% block title %}Login - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<section class="auth-page-hero" style="background-image: linear-gradient(rgba(26,23,18,0.60), rgba(26,23,18,0.55)), url('{{ hero_image_url }}');">
-    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mother's Kitchen" class="hero-logo">
-    <h1>Mother's Kitchen</h1>
-    <p class="hero-quote">&ldquo;{{ tagline }}&rdquo;</p>
+<section class="auth-page-hero" style="background-color: #f2777a;">
+    <div class="login-page">
+        <div class="lagin-logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mother's Kitchen" class="login-logo">
+        </div>
 
-    <div class="auth-card">
-        <h2>Welcome Back</h2>
-        <p class="subtle">Log in as a customer to order, or as an admin to manage the kitchen.</p>
+        <div class="auth-card">
+            <h2>Welcome Back</h2>
+            <p class="subtle">Log in as a customer to order, or as an admin to manage the kitchen.</p>
 
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form" novalidate>
-            <!-- account_type radio toggle: decides where a validated user is redirected -->
-            <div class="radio-toggle">
-                <label class="radio-option">
-                    <input type="radio" name="account_type" value="customer" id="account_type_customer" checked>
-                    <span>Customer</span>
-                </label>
-                <label class="radio-option">
-                    <input type="radio" name="account_type" value="admin" id="account_type_admin">
-                    <span>Admin</span>
-                </label>
-            </div>
+            <form method="POST" action="{{ url_for('login') }}" class="auth-form" novalidate>
+                <!-- account_type radio toggle: decides where a validated user is redirected -->
+                <div class="radio-toggle">
+                    <label class="radio-option">
+                        <input type="radio" name="account_type" value="customer" id="account_type_customer" checked>
+                        <span>Customer</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="account_type" value="admin" id="account_type_admin">
+                        <span>Admin</span>
+                    </label>
+                </div>
 
-            <label for="email">Email</label>
-            <input type="email" name="email" id="email" required placeholder="you@example.com">
+                <label for="email">Email</label>
+                <input type="email" name="email" id="email" required placeholder="you@example.com">
 
-            <label for="password">Password</label>
-            <input type="password" name="password" id="password" required placeholder="Your password">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" required placeholder="Your password">
 
-            <button type="submit" class="btn btn-primary btn-block">Log In</button>
-        </form>
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+            </form>
 
-        <p class="auth-switch">New here? <a href="{{ url_for('signup') }}">Create a customer account</a></p>
+            <p class="auth-switch">Don't have an account? <a href="{{ url_for('signup') }}">Click here to create an account.</a></p>
 
-        <p class="demo-hint">
-            Demo admin: admin@motherskitchen.example / Admin@1234<br>
-            Demo customer: jamie@example.com / Customer@123
-        </p>
+            <p class="demo-hint">
+                Demo admin: admin@motherskitchen.example / Admin@1234<br>
+                Demo customer: jamie@example.com / Customer@123
+            </p>
+        </div>
     </div>
 </section>
 
