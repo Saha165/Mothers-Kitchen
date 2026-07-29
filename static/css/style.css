@@ -1,0 +1,333 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600;1,700&family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+:root {
+    /* --- Palette (derived from the Mother's Kitchen mockups) --- */
+    --color-cream: #fbf3df;
+    --color-black: #1a1712;
+    --color-coral: #f2777a;
+    --color-coral-dark: #e6595d;
+    --color-peach: #f4b183;
+    --color-peach-dark: #eea267;
+    --color-maroon: #8f1d21;
+    --color-maroon-dark: #711519;
+    --color-olive: #7a8450;
+    --color-text: #2c2620;
+    --color-text-light: #6b5f52;
+    --color-white: #ffffff;
+
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --shadow-soft: 0 4px 14px rgba(26, 23, 18, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--color-cream);
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+h1, h2, h3 {
+    text-align: center;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 600;
+    color: var(--color-maroon);
+    margin-top: 0;
+}
+
+a { color: var(--color-maroon); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* --- Header / Nav ------------------------------------------------------ */
+.site-header {
+    background: var(--color-black);
+    padding: 0.75rem 1.5rem;
+}
+
+.header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-img {
+    height: 56px;
+    width: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--color-cream);
+}
+
+.brand-name {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-coral);
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.main-nav a {
+    color: var(--color-cream);
+    background: var(--color-peach);
+    color: var(--color-black);
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.main-nav a:hover { background: var(--color-peach-dark); text-decoration: none; }
+
+.cart-badge {
+    background: var(--color-maroon);
+    color: var(--color-white);
+    border-radius: 999px;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    margin-left: 0.35rem;
+}
+
+/* --- Layout -------------------------------------------------------------- */
+.site-main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    min-height: 60vh;
+}
+
+.site-footer {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--color-text-light);
+    font-size: 0.85rem;
+}
+/* --- Buttons --------------------------------------------------------------- */
+.btn {
+    display: inline-block;
+    padding: 0.7rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-family: var(--font-body);
+    text-align: center;
+}
+
+.btn:hover { text-decoration: none; opacity: 0.92; }
+
+.btn-primary { background: var(--color-maroon); color: var(--color-white); }
+.btn-primary:hover { background: var(--color-maroon-dark); }
+
+.btn-secondary { background: var(--color-maroon); color: var(--color-white); }
+.btn-secondary:hover { background: var(--color-coral-dark); }
+
+.btn-outline { background: var(--color-peach); color: var(--color-black); }
+.btn-outline:hover { background: var(--color-peach-dark); }
+
+.btn-block { display: block; width: 100%; margin-top: 1rem; }
+.btn-small { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--color-maroon);
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.85rem;
+    padding: 0;
+}
+.remove-link { color: #a12727; }
+
+/* --- Hero / Home page ------------------------------------------------------- */
+.hero {
+    text-align: center;
+    background: var(--color-coral);
+    border-radius: var(--radius-lg);
+    padding: 3rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Photo variant: a real background image (mother cooking/feeding children)
+   with a dark gradient layered on top so the heading/tagline stay
+   readable regardless of the photo's own colors. The gradient is a
+   separate CSS layer, so text stays legible even if the photo URL
+   itself fails to load. */
+.hero-photo {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.hero-photo h1 { color: var(--color-white); }
+.hero-photo .tagline { color: var(--color-cream); }
+
+.hero-quote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.35rem;
+    color: var(--color-peach);
+    margin: 0.1rem 0 0.85rem;
+}
+
+.hero-logo {
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    background: var(--color-cream);
+    object-fit: cover;
+}
+
+.hero h1 {
+    font-size: 2.6rem;
+    color: var(--color-black);
+    margin-bottom: 0.25rem;
+}
+
+.tagline { color: var(--color-black); font-size: 1.05rem; margin-bottom: 1.5rem; }
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.info-section {
+    background: var(--color-peach);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.contact-and-location {
+    display: flex;
+    gap: 20px;
+}
+
+.contact{
+    flex: 1; /* Ensures both boxes take up equal width */
+    background: var(--color-peach);
+    padding: 24px;
+    border-radius: 12px; /* Smooth rounded corners */
+    text-align: center; /* Centres the text horizontally */
+    font-family: sans-serif;
+    font-size: 18px;
+}
+
+.location {
+    flex: 1; /* Ensures both boxes take up equal width */
+    background: var(--color-peach);
+    padding: 24px;
+    border-radius: 12px; /* Smooth rounded corners */
+    text-align: center; /* Centres the text horizontally */
+    font-family: sans-serif;
+    font-size: 18px;
+}
+
+.contact-list { list-style: none; padding: 0; }
+.contact-list li { margin-bottom: 0.4rem; }
+
+.reasons-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+.reasons-list li { background: var(--color-white); border-radius: var(--radius-md); padding: 1rem 1.25rem; }
+.reasons-list li strong { color: var(--color-maroon); display: block; margin-bottom: 0.35rem; }
+.reasons-list li p { margin: 0; font-size: 0.9rem; color: var(--color-text); }
+
+/* --- Auth forms -------------------------------------------------------------- */
+.auth-page-hero {
+    text-align: center;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: var(--radius-lg);
+    padding: 3rem 1.5rem 2.5rem;
+    margin-bottom: 1.5rem;
+}
+.auth-page-hero h1 {
+    color: var(--color-white);
+    font-size: 2.3rem;
+    margin: 0 0 0.1rem;
+}
+.auth-page-hero .auth-card { margin-top: 1.75rem; }
+
+.auth-card {
+    max-width: 460px;
+    margin: 0 auto;
+    background: var(--color-coral);
+    border-radius: var(--radius-lg);
+    padding: 2.25rem;
+    box-shadow: var(--shadow-soft);
+    text-align: left;
+}
+
+.auth-card h1, .auth-card h2 { color: var(--color-black); }
+.subtle { color: var(--color-text-light); }
+.auth-card .subtle { color: #4a1414; }
+
+.auth-form { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.auth-form label {
+    font-weight: 700;
+    color: var(--color-black);
+    margin-top: 0.6rem;
+    font-size: 0.9rem;
+}
+
+.auth-form input,
+.auth-form textarea,
+.auth-form select {
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid #d8b9ba;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+}
+
+.auth-switch { text-align: center; margin-top: 1.25rem; color: var(--color-black); }
+.demo-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #4a1414;
+    background: rgba(255,255,255,0.35);
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin-top: 1rem;
+}
+
+.radio-toggle {
+    display: flex;
+    gap: 1.5rem;
+    background: rgba(255,255,255,0.4);
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+}
+.radio-option { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--color-black); }

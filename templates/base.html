@@ -3,37 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mother's Kitchen</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="logo.png">
+    <title>{% block title %}Mother's Kitchen{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
+    {% block extra_head %}{% endblock %}
 </head>
-
 <body>
 
 <header class="site-header">
     <div class="header-inner">
-        <a href="home.html" class="logo-link">
+        <a href="{{ url_for('home2') }}" class="logo-link">
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mother's Kitchen logo" class="logo-img">
             <span class="brand-name">Mother's Kitchen</span>
         </a>
 
         <nav class="main-nav">
             {% if session.get('account_type') == 'admin' %}
-                <a href="adminDashboard.html">Dashboard</a>
-                <a href="adminMagangeMenu.html">Manage Menu</a>
-                <a href="adminReports.html">Reports</a>
-                <a href="authLogout.html">Logout</a>
+
+                <a href="{{ url_for('logout') }}">Logout</a>
             {% elif session.get('account_type') == 'customer' %}
-                <a href="home.html">Home</a>
-                <a href="menu.html">Menu</a>
-                <a href="cart.html">Cart</a>
-                <a href="profile.html">Profile</a>
-                <a href="authLogout.html">Logout</a>
+                <a href="{{ url_for('track') }}">Track Order</a>
+                <a href="{{ url_for('home2') }}">Home</a>
+                <a href="{{ url_for('cart') }}">Cart</a>
+                <a href="{{ url_for('profile') }}">Profile</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
-                <a href="home.html">Home</a>
-                <a href="about.html">About Us</a>
-                <a href="authLogin.html">Login</a>
-                <a href="authSignup.html">Sign Up</a>
+                <a href="{{ url_for('home2') }}">Home</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline">Customer Login</a>
+                <a href="{{ url_for('login') }}?admin=1" class="btn btn-outline">Admin Login</a>
             {% endif %}
         </nav>
     </div>
@@ -57,8 +54,9 @@
 </main>
 
 <footer class="site-footer">
-    <p><a href="about.html">About Us</a></p>
-    <p>&copy; {{ current_year }} Mother's Kitchen &mdash; Home-Made &amp; Heart-Made.</p>
+    <p>this is the foooooooterrrrrr</p>
+    <p>All orders are prepared fresh and picked up curbside from our home kitchen window &mdash; no dine-in seating available.</p>
 </footer>
+
 </body>
 </html>

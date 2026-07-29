@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Mother's Kitchen{% endblock %}
+
+{% block content %}
+<section class="hero hero-photo" style="background-color: #F07075;">
+    <h2>Explore Today's Menu:</h2>
+
+    <div class="hero-actions">
+        <a href="{{ url_for('menu') }}" class="btn btn-secondary">Menu</a>
+    </div>
+</section>
+
+<section id="about-us" class="info-section">
+    <h2>Don't have an account?</h2>
+    <div class="hero-actions">
+        <a href="{{ url_for('signup') }}" class="btn btn-secondary">Sign Up</a>
+    </div>
+    
+</section>
+
+<section id="contact and location" class="contact-and-location">
+    <div class="contact-and-location">
+        <div class="contact">
+            <h2>Contact:</h2>
+            <p>Have a question about an order, a dietary need, or a catering request? We'd love to hear from you.</p>
+            <ul class="contact-list">
+                <li><strong>Phone:</strong>XXXX XXX XXX</li>
+                <li><strong>Email:</strong>XXXXXXXXXXXX</li>
+                <li><strong>Hours:</strong>XXXXXXXXX</li>
+            </ul>
+        </div>
+
+        <div class="location">
+            <h2>Location:</h2>
+            <p>XXXXXXXXXX</p>
+        </div>
+    </div>
+    
+</section>
+{% endblock %}

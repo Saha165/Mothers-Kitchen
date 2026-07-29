@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sign Up - Mother's Kitchen{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <h1>Create Your Account</h1>
+    <p class="subtle">Just a few details and you'll be exploring today's menu.</p>
+
+    <form method="POST" action="{{ url_for('signup') }}" class="auth-form" novalidate>
+        <label for="name">Full Name</label>
+        <input type="text" name="name" id="name" required placeholder="Name">
+
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email" required placeholder="email@example.com">
+
+        <label for="mobile_number">Mobile Number</label>
+        <input type="tel" name="mobile_number" id="mobile_number" required placeholder="XXXX-XXX-XXX">
+
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required placeholder="Password">
+
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" name="confirm_password" id="confirm_password" required placeholder="Confirm Password">
+
+        <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+</section>
+{% endblock %}
