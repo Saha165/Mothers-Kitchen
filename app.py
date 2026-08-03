@@ -11,7 +11,8 @@ from functools import wraps
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
-from models import db, User, MenuItem
+from models import MenuItem, Order, OrderItem, PickupSlot, User, db
+
 
 app = Flask(__name__)
 app.secret_key = "mothers_kitchen_secret_key"
@@ -37,6 +38,8 @@ BUSINESS_PHONE = "0444 503 867"
 BUSINESS_EMAIL = "weserve@motherskitchen.com.au"
 BUSINESS_HOURS = "Tuesday - Sunday, 11:00 AM - 7:00 PM"
 BUSINESS_ADDRESS = "6 Universal Road, Tarneit, VIC, 3029"
+
+MAX_BOOKINGS_PER_SLOT = 5
 
 # Validation helpers
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -77,6 +80,31 @@ def home():
         business_address="123 Home Street, Tarneit VIC 3029",
         current_year=datetime.now().year
     )
+
+#images
+def save_menu_image(file_storage):
+    """Saves an uploaded photo and returns its new URL, or None if no file was given."""
+    if not file_storage or file_storage.filename == "":
+        return None
+
+    extension = file_storage.filename.rsplit(".", 1)[-1].lower() if "." in file_storage.filename else ""
+    if extension not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValueError("Unsupported file type. Please upload a PNG, JPG, JPEG, GIF, or WEBP image.")
+
+    # Add a random prefix so two people uploading "naan.jpg" don't overwrite each other.
+    unique_name = f"{uuid.uuid4().hex}_{secure_filename(file_storage.filename)}"
+    file_storage.save(os.path.join(UPLOAD_FOLDER, unique_name))
+    return f"/static/images/menu/{unique_name}"
+
+
+def delete_menu_image(image_url):
+    """Deletes a previously uploaded photo file, if this URL points to one."""
+    if not image_url or not image_url.startswith("/static/images/menu/"):
+        return  # It's an external URL (or empty) -- nothing to delete.
+    file_path = os.path.join(UPLOAD_FOLDER, image_url.rsplit("/", 1)[-1])
+    if os.path.isfile(file_path):
+        os.remove(file_path)
+
 
 # Login Home Route
 @app.route("/home2")
@@ -193,7 +221,7 @@ def logout():
 def menu():
     """Shows every available dish. Supports a search box and dietary filters."""
     query_text = request.args.get("q", "").strip()
-    selected_diets = request.args.getlist("diet")  # e.g. ['vegan', 'gluten_free']
+    selected_diets = request.args.getlist("diet")
 
     items_query = MenuItem.query.filter_by(is_available=True)
 
@@ -217,6 +245,13 @@ def menu():
     items = items_query.order_by(MenuItem.category, MenuItem.name).all()
     return render_template("menu.html", items=items, query_text=query_text, selected_diets=selected_diets)
 
+
+@app.route("/menu/<int:item_id>")
+@login_required
+def item_detail(item_id):
+    item = MenuItem.query.get_or_404(item_id)
+    return render_template("item_detail.html", item=item)
+
 # cart
 def get_cart():
     return session.setdefault("cart", {})
@@ -235,6 +270,49 @@ def cart():
         total += subtotal
         details.append({"item": item, "quantity": qty, "subtotal": subtotal})
     return render_template("cart.html", details=details, total=total)
+
+@app.route("/cart/add/<int:item_id>", methods=["POST"])
+@login_required
+def add_to_cart(item_id):
+    item = MenuItem.query.get_or_404(item_id)
+    if not item.is_available:
+        flash(f"Sorry, {item.name} is sold out.", "error")
+        return redirect(url_for("menu"))
+
+    cart = get_cart()
+    key = str(item_id)
+    cart[key] = cart.get(key, 0) + 1
+    session.modified = True
+    flash(f"Added {item.name} to your cart.", "success")
+    return redirect(request.referrer or url_for("menu"))
+
+@app.route("/cart/remove/<int:item_id>", methods=["POST"])
+@login_required
+def remove_from_cart(item_id):
+    cart = get_cart()
+    cart.pop(str(item_id), None)
+    session.modified = True
+    flash("Item removed from cart.", "success")
+    return redirect(url_for("cart"))
+
+
+@app.route("/cart/update/<int:item_id>", methods=["POST"])
+@login_required
+def update_cart(item_id):
+    action = request.form.get("action")  # 'increase' or 'decrease'
+    cart = get_cart()
+    key = str(item_id)
+
+    if key in cart:
+        if action == "increase":
+            cart[key] += 1
+        elif action == "decrease":
+            cart[key] -= 1
+            if cart[key] <= 0:
+                del cart[key]
+        session.modified = True
+
+    return redirect(url_for("cart"))
 
 
 # Customer Profile
@@ -278,6 +356,86 @@ def admin_menu():
 @admin_required
 def admin_reports():
     return render_template("admin_reports.html")
+
+# checkout
+@app.route("/checkout", methods=["GET", "POST"])
+@login_required
+def checkout():
+    cart = get_cart()
+    if not cart:
+        flash("Your cart is empty.", "error")
+        return redirect(url_for("menu"))
+
+    # Only offer slots for today and the next 3 days.
+    today = date.today()
+    upcoming_dates = [today + timedelta(days=i) for i in range(4)]
+    slots = (
+        PickupSlot.query.filter(PickupSlot.slot_date.in_(upcoming_dates), PickupSlot.is_active.is_(True))
+        .order_by(PickupSlot.slot_date, PickupSlot.id)
+        .all()
+    )
+
+    if request.method == "POST":
+        slot_id = request.form.get("pickup_slot_id")
+        if not slot_id:
+            flash("Please select a pickup time slot.", "error")
+            return render_template("checkout.html", slots=slots, today=today)
+
+        slot = PickupSlot.query.get(int(slot_id))
+        if slot is None:
+            flash("That pickup slot no longer exists.", "error")
+            return render_template("checkout.html", slots=slots, today=today)
+
+        # Check the slot isn't already full.
+        if slot.current_booking_count() >= MAX_BOOKINGS_PER_SLOT:
+            flash("Sorry, that pickup window just filled up. Please choose another.", "error")
+            return render_template("checkout.html", slots=slots, today=today)
+
+        # Build the order.
+        order = Order(customer_id=session["user_id"], pickup_slot_id=slot.id)
+        db.session.add(order)
+
+        for item_id_str, qty in cart.items():
+            item = MenuItem.query.get(int(item_id_str))
+            if item is None or qty <= 0:
+                continue
+            order.items.append(
+                OrderItem(menu_item_id=item.id, item_name=item.name, quantity=qty, unit_price=item.price)
+            )
+
+        order.calculate_total_amount()
+        db.session.commit()
+
+        # Empty the cart now that the order has been placed.
+        session["cart"] = {}
+        session.modified = True
+
+        customer = User.query.get(session["user_id"])
+
+        # send email place here
+
+        flash("Order placed! Track its progress below.", "success")
+        return redirect(url_for("track_order", order_id=order.id))
+
+    return render_template("checkout.html", slots=slots, today=today)
+
+#track order
+@app.route("/track/<int:order_id>")
+@login_required
+def track_order(order_id):
+    order = Order.query.get_or_404(order_id)
+    if order.customer_id != session["user_id"]:
+        flash("You don't have access to that order.", "error")
+        return redirect(url_for("menu"))
+
+    payment_info = {
+        "payid": PAYID,
+        "bank_name": BANK_NAME,
+        "account_name": BANK_ACCOUNT_NAME,
+        "bsb": BANK_BSB,
+        "account_number": BANK_ACCOUNT_NUMBER,
+    }
+    return render_template("track.html", order=order, payment_info=payment_info)
 
 
 if __name__ == "__main__":

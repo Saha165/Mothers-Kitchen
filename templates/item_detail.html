@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} - Mother's Kitchen{% endblock %}
+
+{% block content %}
+<section class="item-detail">
+    <a href="{{ url_for('menu') }}" class="back-link">&larr; Back to Menu</a>
+
+    <div class="item-detail-grid">
+        <div class="image-and-name">
+            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="item-detail-img"
+             onerror="this.src='{{ url_for('static', filename='images/logo.png') }}'">
+            <br>
+            <h1>{{ item.name }}</h1>
+            <p class="item-category">{{ item.category }}</p>
+        </div>
+        
+
+        <div class="item-detail-info">
+            <div class="badge-row">
+                {% if item.is_vegan %}<span class="diet-badge">Vegan</span>{% endif %}
+                {% if item.is_gluten_free %}<span class="diet-badge">Gluten-Free</span>{% endif %}
+                {% if item.is_dairy_free %}<span class="diet-badge">Dairy-Free</span>{% endif %}
+                {% if item.is_nut_free %}<span class="diet-badge">Nut-Free</span>{% endif %}
+            </div>
+             <div class="item-description">
+                <p class="price-large">${{ "%.2f"|format(item.price) }}</p>
+                <p class="item-description">{{ item.description }}</p>
+             </div>
+
+            {% if item.is_available %}
+                <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}">
+                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                </form>
+            {% else %}
+                <p class="sold-out-badge">Sold Out</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

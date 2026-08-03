@@ -61,6 +61,7 @@ a:hover { text-decoration: underline; }
     gap: 1rem;
 }
 
+/*login*/
 .login-page{
     display: flex;
     gap: 20px;
@@ -127,7 +128,7 @@ a:hover { text-decoration: underline; }
     margin-left: 0.35rem;
 }
 
-/* --- Layout -------------------------------------------------------------- */
+/*Layout*/
 .site-main {
     max-width: 1100px;
     margin: 0 auto;
@@ -141,7 +142,7 @@ a:hover { text-decoration: underline; }
     color: var(--color-text-light);
     font-size: 0.85rem;
 }
-/* --- Buttons --------------------------------------------------------------- */
+/*Buttons*/
 .btn {
     display: inline-block;
     padding: 0.7rem 1.5rem;
@@ -180,7 +181,7 @@ a:hover { text-decoration: underline; }
 }
 .remove-link { color: #a12727; }
 
-/* --- Hero / Home page ------------------------------------------------------- */
+/*Hero / Home page*/
 .hero {
     text-align: center;
     background: var(--color-coral);
@@ -190,11 +191,6 @@ a:hover { text-decoration: underline; }
     box-shadow: var(--shadow-soft);
 }
 
-/* Photo variant: a real background image (mother cooking/feeding children)
-   with a dark gradient layered on top so the heading/tagline stay
-   readable regardless of the photo's own colors. The gradient is a
-   separate CSS layer, so text stays legible even if the photo URL
-   itself fails to load. */
 .hero-photo {
     background-size: cover;
     background-position: center;
@@ -347,3 +343,406 @@ a:hover { text-decoration: underline; }
     margin-bottom: 0.5rem;
 }
 .radio-option { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--color-black); }
+
+/*search*/
+.search-form {
+  display: flex;
+  align-items:center;
+  max-width: 200px; /* Adjust width as needed */
+  width: 100%;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.55rem 2.5rem 0.55rem 1rem; /* Extra right padding for button icon */
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--color-black);
+  background-color: var(--color-white);
+  border: 1.5px solid var(--color-peach-dark);
+  border-radius: 999px; /* Pill shape */
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: var(--color-text-light);
+}
+
+.search-input:focus {
+  border-color: var(--color-maroon);
+  box-shadow: 0 0 0 3px rgba(143, 29, 33, 0.15);
+}
+
+/* Embedded Search Icon Button */
+.search-btn {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: var(--color-maroon);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.search-btn:hover {
+  color: var(--color-maroon-dark);
+}
+
+.search-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/*menu*/
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.menu-card {
+    background: var(--color-coral);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-card-img { width: 100%; height: 160px; object-fit: cover; display: block; }
+
+.menu-card-body { padding: 1rem 1.15rem 1.25rem; color: var(--color-black); flex: 1; display: flex; flex-direction: column; }
+
+.menu-card-body h3 { margin: 0 0 0.35rem; font-size: 1.1rem; }
+.menu-card-body h3 a { color: var(--color-black); }
+
+.menu-card-desc { font-size: 0.85rem; color: #3a1a1a; flex: 1; }
+
+.badge-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
+
+.diet-badge {
+    background: var(--color-olive);
+    color: var(--color-white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+}
+
+.menu-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+
+/*item details*/
+.back-link { display: inline-block; margin-bottom: 1rem; font-weight: 700; }
+.item-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    
+}
+
+.item-description{
+    margin: 1rem 0;
+    display: grid;
+    background: var(--color-coral);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+}
+
+.item-detail-img { 
+    width: 100%; 
+    border-radius: var(--radius-md); 
+    object-fit: cover; 
+    max-height: 360px; 
+}
+
+.item-category { 
+    color: var(--color-text-light); 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    font-size: 1rem; 
+    text-align: center;
+}
+
+@media (max-width: 720px) {
+    .item-detail-grid { grid-template-columns: 1fr; }
+}
+
+/* cart */
+.cart-page-items {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start; /* Prevents the checkout card from stretching vertically */
+}
+
+.cart-items {
+    flex: 2; /* Gives more width to the item table container */
+    padding: 24px;
+    border-radius: 12px;
+    font-family: sans-serif;
+    font-size: 18px;
+}
+
+.cart-checkout {
+    flex: 1; /* Sidebar width for checkout */
+    background: var(--color-peach);
+    padding: 24px;
+    border-radius: 12px;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 18px;
+}
+
+.cart-table { 
+    width: 100%; /* Ensures the table expands across its container */
+    border-collapse: collapse; 
+    background: var(--color-white); 
+    border-radius: var(--radius-md); 
+    overflow: hidden; 
+}
+
+.cart-table th, .cart-table td { 
+    padding: 0.85rem; 
+    text-align: left; 
+    border-bottom: 1px solid #f0e2c8; 
+    font-size: 0.9rem; 
+}
+
+.cart-table th { 
+    background: var(--color-black); 
+    color: var(--color-cream); 
+}
+
+.cart-item-name { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.75rem; 
+    font-weight: 700; 
+}
+
+.cart-thumb { 
+    width: 48px; 
+    height: 48px; 
+    object-fit: cover; 
+    border-radius: 8px; 
+}
+
+.qty-form { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+}
+
+.qty-btn {
+    width: 28px; 
+    height: 28px; 
+    border-radius: 50%; 
+    border: none;
+    background: var(--color-peach); 
+    font-weight: 800; 
+    cursor: pointer; 
+    font-size: 1rem;
+}
+
+.qty-value { 
+    min-width: 1.5rem; 
+    text-align: center; 
+    font-weight: 700; 
+}
+
+.cart-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2rem;
+    font-weight: 800;
+    padding: 1rem 0.5rem;
+    color: var(--color-maroon);
+}
+
+.cart-total-price { 
+    font-size: 1.4rem; 
+}
+
+.cart-checkout h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    color: var(--color-maroon);
+    text-align: left;
+}
+
+.cart-summary-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.summary-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.summary-item-name {
+    text-align: left;
+    font-weight: 600;
+}
+
+.summary-item-name small {
+    color: #666;
+    font-weight: normal;
+    margin-left: 4px;
+}
+
+.summary-item-subtotal {
+    font-weight: 700;
+}
+
+.summary-divider {
+    border: none;
+    border-top: 1px dashed #dca89d;
+    margin: 1rem 0;
+}
+
+/*checkout*/
+/* Container Layout */
+.checkout-container {
+    display: flex;
+    gap: 3rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-top: 2rem;
+    background-color: var(--color-cream); /* Soft cream background */
+    padding: 2.5rem;
+    border-radius: 16px;
+}
+
+/* Left Section: Selectors */
+.selector-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.form-group label {
+    font-size: 1.8rem;
+    font-weight: 500;
+    min-width: 80px;
+    color: #111;
+}
+
+.input-wrapper,
+.custom-select-wrapper {
+    width: 100%;
+    max-width: 380px;
+    position: relative;
+}
+
+/* Shared Pill Styling for Date Calendar & Time Select */
+.custom-input,
+.custom-select {
+    width: 100%;
+    padding: 0.8rem 1.2rem;
+    font-size: 1.1rem;
+    background-color: #f27272; /* Salmon red pill background */
+    color: #111;
+    border: 2px solid #000;
+    border-radius: 20px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Calendar Icon inside Date Input */
+.custom-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    transform: scale(1.2);
+}
+
+/* Custom Down Arrow for Time Dropdown */
+.custom-select-wrapper::after {
+    content: '⌵';
+    position: absolute;
+    right: 18px;
+    top: 45%;
+    transform: translateY(-50%) scaleX(1.5);
+    font-size: 1.4rem;
+    font-weight: bold;
+    pointer-events: none;
+    color: #111;
+}
+
+/* Disabled State for Dropdown */
+.custom-select:disabled {
+    background-color: #e0a3a3;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Right Section: Confirmation Card */
+.confirmation-card {
+    background-color: #f7a97b; /* Peach background */
+    padding: 2rem;
+    border-radius: 24px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 280px;
+}
+
+.confirmation-card h2 {
+    font-size: 1.6rem;
+    color: #111;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.confirm-details p {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #111;
+}
+
+/* Red Submit Button */
+.btn-confirm {
+    background-color: #a31d24; /* Dark red button */
+    color: #ffffff;
+    border: none;
+    padding: 0.9rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 30px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 1.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-confirm:hover {
+    background-color: #82151b;
+}

@@ -1,8 +1,57 @@
 {% extends "base.html" %}
-{% block title %}Menu - Mother's Kitchen{% endblock %}
+{% block title %}Today's Menu - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<p>dis izzz da menu page</p>
-<p>SHALALALA</p>
+<section class="menu-page">
+    <h1>Explore Today's Menu</h1>
 
+
+        <form method="GET" action="{{ url_for('menu') }}" class="menu-filter-form">
+            <input type="text" name="q" value="{{ query_text }}" placeholder="Search dishes..." class="search-input">
+
+            <div class="diet-badges">
+                {% set diet_options = [('vegan', 'Vegan'), ('gluten_free', 'Gluten-Free'), ('dairy_free', 'Dairy-Free'), ('nut_free', 'Nut-Free')] %}
+                {% for value, label in diet_options %}
+                    <label class="badge-checkbox">
+                        <input type="checkbox" name="diet" value="{{ value }}" {% if value in selected_diets %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{{ url_for('menu') }}" class="btn btn-outline">Clear</a>
+        </form>
+
+    {% if items %}
+        <div class="menu-grid">
+            {% for item in items %}
+                <div class="menu-card">
+                    <a href="{{ url_for('item_detail', item_id=item.id) }}">
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="menu-card-img"
+                             onerror="this.src='{{ url_for('static', filename='images/logo.png') }}'">
+                    </a>
+                    <div class="menu-card-body">
+                        <h3><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.name }}</a></h3>
+                        <p class="menu-card-desc">{{ item.description[:80] }}{% if item.description|length > 80 %}...{% endif %}</p>
+                        <div class="badge-row">
+                            {% if item.is_vegan %}<span class="diet-badge">Vegan</span>{% endif %}
+                            {% if item.is_gluten_free %}<span class="diet-badge">Gluten-Free</span>{% endif %}
+                            {% if item.is_dairy_free %}<span class="diet-badge">Dairy-Free</span>{% endif %}
+                            {% if item.is_nut_free %}<span class="diet-badge">Nut-Free</span>{% endif %}
+                        </div>
+                        <div class="menu-card-footer">
+                            <span class="price">${{ "%.2f"|format(item.price) }}</span>
+                            <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}">
+                                <button type="submit" class="btn btn-small btn-primary">Add to Cart</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">No dishes match your search/filters right now. Try clearing a filter.</p>
+    {% endif %}
+</section>
 {% endblock %}

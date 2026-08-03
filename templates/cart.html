@@ -1,7 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Cart - Mother's Kitchen{% endblock %}
+{% block title %}Your Cart - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<p>ur costly cart</p>
+<section class="cart-page">
+    <h1>Your Cart</h1>
+    {% if details %}
+    <div class="cart-page-items">
+        <div class="cart-items">
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in details %}
+                        <tr>
+                            <td class="cart-item-name">
+                                <img src="{{ row.item.image_url }}" alt="{{ row.item.name }}" class="cart-thumb"
+                                    onerror="this.src='{{ url_for('static', filename='images/logo.png') }}'">
+                                {{ row.item.name }}
+                            </td>
+                            <td>${{ "%.2f"|format(row.item.price) }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('update_cart', item_id=row.item.id) }}" class="qty-form">
+                                    <button type="submit" name="action" value="decrease" class="qty-btn">&minus;</button>
+                                    <span class="qty-value">{{ row.quantity }}</span>
+                                    <button type="submit" name="action" value="increase" class="qty-btn">&plus;</button>
+                                </form>
+                            </td>
+                            <td>${{ "%.2f"|format(row.subtotal) }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('remove_from_cart', item_id=row.item.id) }}">
+                                    <button type="submit" class="btn-link remove-link">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="cart-checkout">
+            <h3>Order Summary</h3>
+            
+            <div class="cart-summary-items">
+                {% for row in details %}
+                    <div class="summary-item-row">
+                        <span class="summary-item-name">{{ row.item.name }} <small>x{{ row.quantity }}</small></span>
+                        <span class="summary-item-subtotal">${{ "%.2f"|format(row.subtotal) }}</span>
+                    </div>
+                {% endfor %}
+            </div>
 
+            <hr class="summary-divider">
+
+            <div class="cart-total-row">
+                <span>Total:</span>
+                <span class="cart-total-price">${{ "%.2f"|format(total) }}</span>
+            </div>
+
+            <a href="{{ url_for('checkout') }}" class="btn btn-primary btn-block">Proceed to Checkout</a>
+        </div>
+    </div>
+    
+    {% else %}
+        <p class="empty-state">Your cart is empty. <a href="{{ url_for('menu') }}">Browse today's menu</a>.</p>
+    {% endif %}
+
+</section>
 {% endblock %}
