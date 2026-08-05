@@ -746,3 +746,100 @@ a:hover { text-decoration: underline; }
 .btn-confirm:hover {
     background-color: #82151b;
 }
+
+/*admin manu page*/
+/* --- Manage Menu: card grid --------------------------------------------------------- */
+.menu-manage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.menu-manage-card {
+    position: relative;
+    background: var(--color-peach);
+    border-radius: 18px;
+    padding: 1rem 1rem 1.25rem;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+}
+
+.menu-remove-form { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 1; }
+
+.menu-remove-btn {
+    width: 30px;
+    height: 18px;
+    border-radius: 6px;
+    border: none;
+    background: var(--color-black);
+    color: var(--color-white);
+    font-size: 1rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.menu-remove-btn:hover { background: #3a332a; }
+
+.menu-manage-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1.5px solid var(--color-black);
+    display: block;
+    background: var(--color-white);
+}
+
+.menu-manage-name {
+    margin: 0.75rem 0 0.6rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+.menu-manage-name a { color: var(--color-maroon); }
+
+.menu-toggle-form { display: flex; justify-content: center; }
+
+/* A real sliding iOS-style toggle switch for dish availability */
+.ios-toggle {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    background: #b9ac9c; /* off = sold out */
+}
+.ios-toggle.is-on { background: var(--color-coral); } /* on = available */
+.ios-toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    transition: transform 0.18s ease;
+}
+.ios-toggle.is-on .ios-toggle-knob { transform: translateX(20px); }
+
+.add-items-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--color-maroon);
+    color: var(--color-white);
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding: 0.9rem;
+    border-radius: 999px;
+    box-shadow: var(--shadow-soft);
+}
+.add-items-btn:hover { background: var(--color-maroon-dark); text-decoration: none; }

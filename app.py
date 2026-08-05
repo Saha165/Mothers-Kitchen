@@ -19,9 +19,17 @@ app.secret_key = "mothers_kitchen_secret_key"
 
 # Database Configuration
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'mothers_kitchen.db')
+INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
+
+# Create instance directory if it doesn't exist
+os.makedirs(INSTANCE_DIR, exist_ok=True)
+
+# Point SQLAlchemy directly inside the instance folder
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(INSTANCE_DIR, 'mothers_kitchen.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "images", "menu")
+ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}    
 
 # Link SQLAlchemy instance to Flask app
 db.init_app(app)
@@ -215,7 +223,8 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for("home"))
 
-
+# customer pages
+#customer menu
 @app.route("/menu")
 @login_required
 def menu():
@@ -245,7 +254,7 @@ def menu():
     items = items_query.order_by(MenuItem.category, MenuItem.name).all()
     return render_template("menu.html", items=items, query_text=query_text, selected_diets=selected_diets)
 
-
+#customer menu item
 @app.route("/menu/<int:item_id>")
 @login_required
 def item_detail(item_id):
@@ -271,6 +280,7 @@ def cart():
         details.append({"item": item, "quantity": qty, "subtotal": subtotal})
     return render_template("cart.html", details=details, total=total)
 
+#add ot cart
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
 @login_required
 def add_to_cart(item_id):
@@ -286,6 +296,7 @@ def add_to_cart(item_id):
     flash(f"Added {item.name} to your cart.", "success")
     return redirect(request.referrer or url_for("menu"))
 
+#remove form cart
 @app.route("/cart/remove/<int:item_id>", methods=["POST"])
 @login_required
 def remove_from_cart(item_id):
@@ -295,7 +306,7 @@ def remove_from_cart(item_id):
     flash("Item removed from cart.", "success")
     return redirect(url_for("cart"))
 
-
+#update cart
 @app.route("/cart/update/<int:item_id>", methods=["POST"])
 @login_required
 def update_cart(item_id):
@@ -322,40 +333,12 @@ def profile():
     user = User.query.get_or_404(session["user_id"])
     return render_template("profile.html")
 
-@app.route("/admin/profile")
-@admin_required
-def admin_profile():
-    user = User.query.get_or_404(session["user_id"])
-    return render_template("admin_profile.html")
 
-
-# Track Order
+#track order
 @app.route("/track")
 @login_required
 def track():
     return render_template("track.html")
-
-
-# admin pages
-
-# admin home
-@app.route("/admin/home")
-@admin_required
-def admin_home():
-    return render_template("admin_home.html")
-
-# admin menu
-@app.route("/admin/menu")
-@admin_required
-def admin_menu():
-    items = MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
-    return render_template("admin_menu.html", items=items)
-
-# admin reports
-@app.route("/admin/reports")
-@admin_required
-def admin_reports():
-    return render_template("admin_reports.html")
 
 # checkout
 @app.route("/checkout", methods=["GET", "POST"])
@@ -415,27 +398,145 @@ def checkout():
         # send email place here
 
         flash("Order placed! Track its progress below.", "success")
-        return redirect(url_for("track_order", order_id=order.id))
+        return redirect(url_for("track", order_id=order.id))
 
     return render_template("checkout.html", slots=slots, today=today)
 
-#track order
-@app.route("/track/<int:order_id>")
-@login_required
-def track_order(order_id):
-    order = Order.query.get_or_404(order_id)
-    if order.customer_id != session["user_id"]:
-        flash("You don't have access to that order.", "error")
-        return redirect(url_for("menu"))
 
-    payment_info = {
-        "payid": PAYID,
-        "bank_name": BANK_NAME,
-        "account_name": BANK_ACCOUNT_NAME,
-        "bsb": BANK_BSB,
-        "account_number": BANK_ACCOUNT_NUMBER,
-    }
-    return render_template("track.html", order=order, payment_info=payment_info)
+
+# admin pages
+# admin home
+@app.route("/admin/home")
+@admin_required
+def admin_home():
+    return render_template("admin_home.html")
+
+#admin profile
+@app.route("/admin/profile")
+@admin_required
+def admin_profile():
+    user = User.query.get_or_404(session["user_id"])
+    return render_template("admin_profile.html")
+
+# admin menu
+@app.route("/admin/menu")
+@admin_required
+def admin_menu():
+    items = MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
+    return render_template("admin_menu.html", items=items)
+
+
+@app.route("/admin/menu/<int:item_id>/toggle", methods=["POST"])
+@admin_required
+def admin_toggle_availability(item_id):
+    item = MenuItem.query.get_or_404(item_id)
+    item.is_available = not item.is_available
+    db.session.commit()
+    state = "available" if item.is_available else "sold out"
+    flash(f"{item.name} is now marked as {state}.", "success")
+    return redirect(url_for("admin_menu"))
+
+
+@app.route("/admin/menu/add", methods=["GET", "POST"])
+@admin_required
+def admin_add_menu_item():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        description = request.form.get("description", "").strip()
+        price = request.form.get("price", type=float)
+        category = request.form.get("category", "Main").strip()
+        image_url = request.form.get("image_url", "").strip()
+
+        # An uploaded file (if given) always wins over a typed-in URL.
+        try:
+            uploaded_url = save_menu_image(request.files.get("image_file"))
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template("admin_menu_form.html", item=None)
+
+        if uploaded_url:
+            image_url = uploaded_url
+
+        if not name or not description or price is None or not image_url:
+            flash("Name, description, price, and either a photo upload or photo URL are required.", "error")
+            return render_template("admin_menu_form.html", item=None)
+
+        if price <= 0:
+            flash("Price must be greater than $0.", "error")
+            return render_template("admin_menu_form.html", item=None)
+
+        item = MenuItem(
+            name=name,
+            description=description,
+            price=price,
+            category=category or "Main",
+            image_url=image_url,
+            is_vegan=bool(request.form.get("is_vegan")),
+            is_gluten_free=bool(request.form.get("is_gluten_free")),
+            is_dairy_free=bool(request.form.get("is_dairy_free")),
+            is_nut_free=bool(request.form.get("is_nut_free")),
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash(f"{item.name} added to the menu.", "success")
+        return redirect(url_for("admin_menu"))
+
+    return render_template("admin_menu_form.html", item=None)
+
+
+@app.route("/admin/menu/<int:item_id>/edit", methods=["GET", "POST"])
+@admin_required
+def admin_edit_menu_item(item_id):
+    item = MenuItem.query.get_or_404(item_id)
+
+    if request.method == "POST":
+        item.name = request.form.get("name", item.name).strip()
+        item.description = request.form.get("description", item.description).strip()
+        price = request.form.get("price", type=float)
+        if price is not None and price > 0:
+            item.price = price
+        item.category = request.form.get("category", item.category).strip()
+
+        try:
+            uploaded_url = save_menu_image(request.files.get("image_file"))
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template("admin_menu_form.html", item=item)
+
+        image_url = request.form.get("image_url", "").strip()
+        new_image_url = uploaded_url or image_url or None
+        if new_image_url and new_image_url != item.image_url:
+            delete_menu_image(item.image_url)  # clean up the old photo file, if local
+            item.image_url = new_image_url
+
+
+        item.is_vegan = bool(request.form.get("is_vegan"))
+        item.is_gluten_free = bool(request.form.get("is_gluten_free"))
+        item.is_dairy_free = bool(request.form.get("is_dairy_free"))
+        item.is_nut_free = bool(request.form.get("is_nut_free"))
+
+        db.session.commit()
+        flash(f"{item.name} updated.", "success")
+        return redirect(url_for("admin_menu"))
+
+    return render_template("admin_menu_form.html", item=item)
+
+
+@app.route("/admin/menu/<int:item_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_menu_item(item_id):
+    item = MenuItem.query.get_or_404(item_id)
+    delete_menu_image(item.image_url)
+    db.session.delete(item)
+    db.session.commit()
+    flash(f"{item.name} removed from the menu.", "success")
+    return redirect(url_for("admin_menu"))
+
+# admin reports
+@app.route("/admin/reports")
+@admin_required
+def admin_reports():
+    return render_template("admin_reports.html")
 
 
 if __name__ == "__main__":

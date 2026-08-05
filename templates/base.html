@@ -6,14 +6,13 @@
     <title>{% block title %}Mother's Kitchen{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
-    <link rel="name" href="{{ url_for('static', filename='images/mothers_kitchen.png') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
 
 <header class="site-header">
     <div class="header-inner">
-        <a href="{{ url_for('home2') }}" class="logo-link">
+        <a class="logo-link">
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mother's Kitchen logo" class="logo-img">
             <span class="brand-name">Mother's Kitchen</span>
         </a>

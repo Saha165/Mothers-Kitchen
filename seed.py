@@ -117,6 +117,20 @@ SAMPLE_MENU_ITEMS = [
         "is_dairy_free": False,
         "is_nut_free": True,
     },
+    {
+            "name": "Vegetable Biryani",
+            "description": (
+                "Fragrant basmati rice layered with mixed seasonal vegetables, "
+                "saffron, and whole spices, slow-cooked in the traditional dum style."
+            ),
+            "price": 11.49,
+            "category": "Main Course",
+            "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQF_EV-qh4Pu13muRkx4ElZUeOKOb7DLA3HNpUfLreGtA&s=10",
+            "is_vegan": True,
+            "is_gluten_free": True,
+            "is_dairy_free": True,
+            "is_nut_free": False,
+        },
 ]
 
 #slot labels

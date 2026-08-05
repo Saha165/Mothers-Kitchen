@@ -2,6 +2,40 @@
 {% block title %}Manage Menu - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<p>client, go edit ur menu!!!</p>
+<section class="admin-page">
+    <div class="admin-page-header">
+        <h1>Manage Menu</h1>
+    </div>
 
+    <div class="menu-manage-grid">
+        {% for item in items %}
+            <div class="menu-manage-card">
+                <!-- Small "-" button in the corner removes the dish from the menu -->
+                <form method="POST" action="{{ url_for('admin_delete_menu_item', item_id=item.id) }}"
+                      onsubmit="return confirm('Remove {{ item.name }} from the menu?');" class="menu-remove-form">
+                    <button type="submit" class="menu-remove-btn" aria-label="Remove {{ item.name }}">&minus;</button>
+                </form>
+
+                <!-- Clicking the photo or name opens the full Edit Dish page -->
+                <a href="{{ url_for('admin_edit_menu_item', item_id=item.id) }}">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="menu-manage-img"
+                         onerror="this.src='{{ url_for('static', filename='images/logo.png') }}'">
+                </a>
+                <h3 class="menu-manage-name">
+                    <a href="{{ url_for('admin_edit_menu_item', item_id=item.id) }}">{{ item.name }}</a>
+                </h3>
+
+                <!-- The toggle switches the dish between Available and Sold Out -->
+                <form method="POST" action="{{ url_for('admin_toggle_availability', item_id=item.id) }}" class="menu-toggle-form">
+                    <button type="submit" class="ios-toggle {{ 'is-on' if item.is_available else '' }}"
+                            aria-label="{{ 'Currently available - click to mark sold out' if item.is_available else 'Currently sold out - click to mark available' }}">
+                        <span class="ios-toggle-knob"></span>
+                    </button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+
+    <a href="{{ url_for('admin_add_menu_item') }}" class="add-items-btn">Add Items</a>
+</section>
 {% endblock %}
