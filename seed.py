@@ -135,6 +135,7 @@ SAMPLE_MENU_ITEMS = [
 
 #slot labels
 DAILY_SLOT_LABELS = [
+    "11:00 AM - 11:30 AM",
     "11:30 AM - 12:00 PM",
     "12:00 PM - 12:30 PM",
     "12:30 PM - 1:00 PM",

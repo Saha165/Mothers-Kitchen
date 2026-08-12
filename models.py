@@ -6,7 +6,6 @@ db = SQLAlchemy()
 
 
 class User(db.Model):
-   
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -18,11 +17,11 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, raw_password):
-        # hashes the password
+        """Hashes the raw password."""
         self.password_hash = generate_password_hash(raw_password)
 
     def check_password(self, raw_password):
-        # checks the password
+        """Verifies the password against the stored hash."""
         return check_password_hash(self.password_hash, raw_password)
 
 
@@ -49,6 +48,7 @@ class MenuItem(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
 class PickupSlot(db.Model):
     """A bookable pickup time window, e.g. '12:00 PM - 12:30 PM'."""
 
@@ -60,11 +60,15 @@ class PickupSlot(db.Model):
     max_capacity = db.Column(db.Integer, nullable=False, default=5)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
-    orders = db.relationship("Order", backref="pickup_slot", lazy=True)
+    @property
+    def formatted_date(self):
+        """Returns slot_date in DD/MM/YYYY format (e.g. '25/12/2026')."""
+        return self.slot_date.strftime("%d/%m/%Y") if self.slot_date else ""
 
     def current_booking_count(self):
         """How many orders are already booked into this slot."""
         return Order.query.filter_by(pickup_slot_id=self.id).count()
+
 
 class Order(db.Model):
     """
@@ -79,6 +83,10 @@ class Order(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     pickup_slot_id = db.Column(db.Integer, db.ForeignKey("pickup_slots.id"), nullable=False)
 
+    # Explicit relationships connecting to User & PickupSlot
+    customer = db.relationship("User", backref="orders", lazy=True)
+    pickup_slot = db.relationship("PickupSlot", backref="orders", lazy=True)
+
     total_price = db.Column(db.Float, nullable=False, default=0.0)
     status_step = db.Column(db.Integer, nullable=False, default=0)
 
@@ -89,10 +97,7 @@ class Order(db.Model):
         "Picked Up (Completed)",
     ]
 
-    # Mother's Kitchen is paid by bank transfer / PayID, not card, so an
-    # admin marks this "Paid" by hand once the transfer arrives.
     payment_status = db.Column(db.String(20), nullable=False, default="Unpaid")
-
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship("OrderItem", backref="order", lazy=True, cascade="all, delete-orphan")
@@ -132,6 +137,7 @@ class Order(db.Model):
         lines.append(f"Total: ${self.total_price:.2f}")
         return "\n".join(lines)
 
+
 class OrderItem(db.Model):
     """One dish within an order, e.g. '2 x Paneer Tikka Masala'."""
 
@@ -141,14 +147,13 @@ class OrderItem(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
     menu_item_id = db.Column(db.Integer, db.ForeignKey("menu_items.id"), nullable=False)
 
-    # We save the name and price at the time of ordering, so old orders
-    # still look right even if the dish's name or price changes later.
+    # Optional relationship to query the underlying MenuItem directly
+    menu_item = db.relationship("MenuItem", backref="order_items", lazy=True)
+
     item_name = db.Column(db.String(120), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     unit_price = db.Column(db.Float, nullable=False)
 
-    # True if the admin had to remove this one dish from the order
-    # (e.g. it sold out) without cancelling the whole order.
     is_cancelled = db.Column(db.Boolean, nullable=False, default=False)
 
     def subtotal(self):

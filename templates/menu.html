@@ -22,7 +22,7 @@
             <button type="submit" class="btn btn-primary">Filter</button>
             <a href="{{ url_for('menu') }}" class="btn btn-outline">Clear</a>
         </form>
-
+        <br>
     {% if items %}
         <div class="menu-grid">
             {% for item in items %}

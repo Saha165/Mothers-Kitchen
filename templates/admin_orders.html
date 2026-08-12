@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Mother's Kitchen{% endblock %}
+
+{% block content %}
+<section class="admin-page">
+    <h1>Live Order Queue</h1>
+
+    {% if orders %}
+        <table class="cart-table admin-table">
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Pickup</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.customer.name }}<br><span class="subtle">{{ order.customer.email }}</span></td>
+                        <td>
+                            <ul class="order-item-list">
+                                {% for item in order.items %}
+                                    <li class="{{ 'order-item-cancelled' if item.is_cancelled else '' }}">
+                                        <span>{{ item.quantity }} &times; {{ item.item_name }}</span>
+                                        {% if item.is_cancelled %}
+                                            <span class="item-status-tag">Unavailable</span>
+                                            <!-- ✅ FIXED: Points to admin_toggle_item_cancellation -->
+                                            <form method="POST" action="{{ url_for('admin_toggle_item_cancellation', order_id=order.id, item_id=item.id) }}" class="inline-form">
+                                                <button type="submit" class="btn-link">Restore</button>
+                                            </form>
+                                        {% else %}
+                                            <!-- ✅ FIXED: Points to admin_toggle_item_cancellation -->
+                                            <form method="POST" action="{{ url_for('admin_toggle_item_cancellation', order_id=order.id, item_id=item.id) }}" class="inline-form"
+                                                onsubmit="return confirm('Mark {{ item.item_name }} as unavailable and remove it from this order? The customer will be notified.');">
+                                                <button type="submit" class="btn-link remove-link">Cancel Item</button>
+                                            </form>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td>${{ "%.2f"|format(order.total_price) }}</td>
+                        <td>{{ order.pickup_slot.formatted_date }}<br>{{ order.pickup_slot.slot_label }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_toggle_payment_status', order_id=order.id) }}">
+                                <button type="submit" class="toggle-btn {{ 'toggle-on' if order.payment_status == 'Paid' else 'toggle-off' }}">
+                                    {{ order.payment_status }}
+                                </button>
+                            </form>
+                            <span class="subtle">Ref: {{ order.payment_reference() }}</span>
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_update_order_status', order_id=order.id) }}" class="status-form">
+                                <select name="status_step" onchange="this.form.submit()">
+                                    <option value="0" {% if order.status_step == 0 %}selected{% endif %}>Order Accepted</option>
+                                    <option value="1" {% if order.status_step == 1 %}selected{% endif %}>Preparing Order</option>
+                                    <option value="2" {% if order.status_step == 2 %}selected{% endif %}>Ready to Pick Up</option>
+                                    <option value="3" {% if order.status_step == 3 %}selected{% endif %}
+                                            {% if order.payment_status != 'Paid' %}disabled title="Payment must be confirmed first"{% endif %}>
+                                        Picked Up (Completed){% if order.payment_status != 'Paid' %} &mdash; requires payment{% endif %}
+                                    </option>
+                                </select>
+                                {% if order.payment_status != 'Paid' %}
+                                    <p class="subtle payment-block-note">Mark payment as Paid to unlock "Picked Up".</p>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No active orders right now.</p>
+    {% endif %}
+
+    <h2>Recently Completed</h2>
+    {% if completed_orders %}
+        <table class="cart-table admin-table">
+            <thead>
+                <tr><th>Order #</th><th>Customer</th><th>Total</th><th>Payment</th><th>Completed / Placed</th></tr>
+            </thead>
+            <tbody>
+                {% for order in completed_orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.customer.name }}</td>
+                        <td>${{ "%.2f"|format(order.total_price) }}</td>
+                        <td>
+                            <span class="payment-pill {{ 'payment-paid' if order.payment_status == 'Paid' else 'payment-unpaid' }}">{{ order.payment_status }}</span>
+                        </td>
+                        <td>{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No completed orders yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

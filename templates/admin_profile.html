@@ -1,7 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Manage Menu - Mother's Kitchen{% endblock %}
+{% block title %}My Profile - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<p>client, seee ur beau self</p>
+<section class="profile-page">
+    <h1>My Profile</h1>
 
+    <div class="profile-card">
+        <p><strong>Name:</strong> {{ user.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Mobile Number:</strong> {{ user.mobile_number }}</p>
+        <p><strong>Customer since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}</p>
+    </div>
+
+</section>
 {% endblock %}

@@ -1,7 +1,82 @@
 {% extends "base.html" %}
-{% block title %}Track - Mother's Kitchen{% endblock %}
+{% block title %}Track Order #{{ order.id }} - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<p>dis izz where u track ur orderrrr</p>
+<section class="track-page" data-order-id="{{ order.id }}">
+    <h1>Tracking Order #{{ order.id }}</h1>
 
+    <div class="progress-tracker">
+        <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-steps">
+            <div class="progress-step" data-step="0">
+                <div class="step-circle">1</div>
+                <span>Order Accepted</span>
+            </div>
+            <div class="progress-step" data-step="1">
+                <div class="step-circle">2</div>
+                <span>Preparing Order</span>
+            </div>
+            <div class="progress-step" data-step="2">
+                <div class="step-circle">3</div>
+                <span>Ready to Pick Up</span>
+            </div>
+            <div class="progress-step" data-step="3">
+                <div class="step-circle">4</div>
+                <span>Picked Up</span>
+            </div>
+        </div>
+    </div>
+
+    <p class="current-status">Current status: <strong id="status-label">{{ order.status_label() }}</strong></p>
+
+    <div class="order-summary-card">
+        <h3>Order Summary</h3>
+        <ul>
+            {% for item in order.items %}
+                {% if item.is_cancelled %}
+                    <li class="order-item-cancelled">
+                        <span>{{ item.quantity }} &times; {{ item.item_name }} &mdash; ${{ "%.2f"|format(item.subtotal()) }}</span>
+                        <span class="item-status-tag">No Longer Available</span>
+                    </li>
+                {% else %}
+                    <li>{{ item.quantity }} &times; {{ item.item_name }} &mdash; ${{ "%.2f"|format(item.subtotal()) }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+
+        {% if order.cancelled_items() %}
+            <p class="apology-note">
+                We're sorry &mdash; {{ order.cancelled_items() | length }} item(s) above became unavailable
+                after your order was placed and have been removed. We regret the inconvenience this may
+                have caused. The rest of your order is unaffected, and your total below has been updated.
+            </p>
+        {% endif %}
+
+        <p class="cart-total-row"><span>Total:</span> <span>${{ "%.2f"|format(order.total_price) }}</span></p>
+        <p>Pickup: {{ order.pickup_slot.slot_date.strftime('%A, %B %d') }} at {{ order.pickup_slot.slot_label }}</p>
+    </div>
+
+    <div class="payment-card">
+        <div class="payment-card-header">
+            <h3>Payment Details</h3>
+            <span class="payment-pill {{ 'payment-paid' if order.payment_status == 'Paid' else 'payment-unpaid' }}">
+                {{ order.payment_status }}
+            </span>
+        </div>
+        <p class="subtle">We take payment by bank transfer or PayID &mdash; no cards, no fees. Please pay before pickup and quote the reference below so we can match it to your order.</p>
+        <dl class="payment-details-list">
+            <dt>PayID</dt><dd>{{ payment_info.payid }}</dd>
+            <dt>Bank</dt><dd>{{ payment_info.bank_name }}</dd>
+            <dt>Account Name</dt><dd>{{ payment_info.account_name }}</dd>
+            <dt>BSB</dt><dd>{{ payment_info.bsb }}</dd>
+            <dt>Account Number</dt><dd>{{ payment_info.account_number }}</dd>
+            <dt>Payment Reference</dt><dd><strong>{{ order.payment_reference() }}</strong></dd>
+            <dt>Amount Due</dt><dd><strong>${{ "%.2f"|format(order.total_price) }}</strong></dd>
+        </dl>
+    </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/track.js') }}"></script>
 {% endblock %}

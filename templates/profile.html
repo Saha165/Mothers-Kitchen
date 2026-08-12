@@ -1,7 +1,46 @@
 {% extends "base.html" %}
-{% block title %}Profile - Mother's Kitchen{% endblock %}
+{% block title %}My Profile - Mother's Kitchen{% endblock %}
 
 {% block content %}
-<p>ur belle profile</p>
+<section class="profile-page">
+    <h1>My Profile</h1>
+    <div class="profile-card">
+        <p><strong>Name:</strong> {{ user.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Mobile Number:</strong> {{ user.mobile_number }}</p>
+        <p><strong>Customer since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}</p>
+    </div>
 
+    <h2>Order History</h2>
+    {% if orders %}
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                        <td>${{ "%.2f"|format(order.total_price) }}</td>
+                        <td><span class="status-pill">{{ order.status_label() }}</span></td>
+                        <td>
+                            <span class="payment-pill {{ 'payment-paid' if order.payment_status == 'Paid' else 'payment-unpaid' }}">{{ order.payment_status }}</span>
+                        </td>
+                        <td><a href="{{ url_for('track', order_id=order.id) }}" class="btn btn-small btn-outline">Track</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">You haven't placed any orders yet. <a href="{{ url_for('menu') }}">Browse the menu</a>.</p>
+    {% endif %}
+</section>
 {% endblock %}

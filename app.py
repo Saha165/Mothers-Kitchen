@@ -224,7 +224,7 @@ def logout():
     return redirect(url_for("home"))
 
 # customer pages
-#customer menu
+# customer menu
 @app.route("/menu")
 @login_required
 def menu():
@@ -254,7 +254,7 @@ def menu():
     items = items_query.order_by(MenuItem.category, MenuItem.name).all()
     return render_template("menu.html", items=items, query_text=query_text, selected_diets=selected_diets)
 
-#customer menu item
+# customer menu item
 @app.route("/menu/<int:item_id>")
 @login_required
 def item_detail(item_id):
@@ -331,14 +331,55 @@ def update_cart(item_id):
 @login_required
 def profile():
     user = User.query.get_or_404(session["user_id"])
-    return render_template("profile.html")
+    orders = Order.query.filter_by(customer_id=user.id).order_by(Order.created_at.desc()).all()
+    return render_template("profile.html", user=user, orders=orders)
 
 
 #track order
+# In app.py
 @app.route("/track")
+@app.route("/track/<int:order_id>")
 @login_required
-def track():
-    return render_template("track.html")
+def track(order_id=None):
+    if order_id is None:
+        latest_order = (
+            Order.query.filter_by(customer_id=session["user_id"])
+            .order_by(Order.created_at.desc())
+            .first()
+        )
+        if not latest_order:
+            flash("You have no active orders to track.", "error")
+            return redirect(url_for("menu"))
+        order_id = latest_order.id
+
+    order = Order.query.get_or_404(order_id)
+    if order.customer_id != session["user_id"]:
+        flash("You don't have access to that order.", "error")
+        return redirect(url_for("menu"))
+
+    payment_info = {
+        "payid": PAYID,
+        "bank_name": BANK_NAME,
+        "account_name": BANK_ACCOUNT_NAME,
+        "bsb": BANK_BSB,
+        "account_number": BANK_ACCOUNT_NUMBER,
+    }
+    return render_template("track.html", order=order, payment_info=payment_info)
+
+@app.route("/api/order/<int:order_id>/status")
+def api_order_status(order_id):
+    """Polled every few seconds by track.html to animate the progress bar."""
+    order = Order.query.get_or_404(order_id)
+
+    if session.get("account_type") != "admin" and order.customer_id != session.get("user_id"):
+        return jsonify({"error": "forbidden"}), 403
+
+    return jsonify({
+        "order_id": order.id,
+        "status_step": order.status_step,
+        "status_label": order.status_label(),
+        "total_steps": len(Order.STATUS_LABELS),
+    })
 
 # checkout
 @app.route("/checkout", methods=["GET", "POST"])
@@ -349,9 +390,9 @@ def checkout():
         flash("Your cart is empty.", "error")
         return redirect(url_for("menu"))
 
-    # Only offer slots for today and the next 3 days.
+    # only offer slots for today and the next 7 days
     today = date.today()
-    upcoming_dates = [today + timedelta(days=i) for i in range(4)]
+    upcoming_dates = [today + timedelta(days=i) for i in range(8)]
     slots = (
         PickupSlot.query.filter(PickupSlot.slot_date.in_(upcoming_dates), PickupSlot.is_active.is_(True))
         .order_by(PickupSlot.slot_date, PickupSlot.id)
@@ -402,6 +443,19 @@ def checkout():
 
     return render_template("checkout.html", slots=slots, today=today)
 
+@app.route("/api/slots")
+def api_slot_availability():
+    """Lets checkout.html grey out full pickup windows without reloading the page."""
+    slots = PickupSlot.query.filter_by(is_active=True).all()
+    payload = []
+    for slot in slots:
+        count = slot.current_booking_count()
+        payload.append({
+            "id": slot.id, "date": slot.slot_date.isoformat(), "label": slot.slot_label,
+            "booked": count, "capacity": slot.max_capacity, "is_full": count >= slot.max_capacity,
+        })
+    return jsonify(payload)
+
 
 
 # admin pages
@@ -416,7 +470,7 @@ def admin_home():
 @admin_required
 def admin_profile():
     user = User.query.get_or_404(session["user_id"])
-    return render_template("admin_profile.html")
+    return render_template("admin_profile.html", user=user)
 
 # admin menu
 @app.route("/admin/menu")
@@ -447,7 +501,7 @@ def admin_add_menu_item():
         category = request.form.get("category", "Main").strip()
         image_url = request.form.get("image_url", "").strip()
 
-        # An uploaded file (if given) always wins over a typed-in URL.
+        # An uploaded file always wins over a typed-in URL
         try:
             uploaded_url = save_menu_image(request.files.get("image_file"))
         except ValueError as exc:
@@ -506,7 +560,7 @@ def admin_edit_menu_item(item_id):
         image_url = request.form.get("image_url", "").strip()
         new_image_url = uploaded_url or image_url or None
         if new_image_url and new_image_url != item.image_url:
-            delete_menu_image(item.image_url)  # clean up the old photo file, if local
+            delete_menu_image(item.image_url)  # deletes the old photo if stored locally
             item.image_url = new_image_url
 
 
@@ -538,6 +592,113 @@ def admin_delete_menu_item(item_id):
 def admin_reports():
     return render_template("admin_reports.html")
 
+# Admin View Orders
+@app.route("/admin/orders")
+@admin_required
+def admin_orders():
+    """Shows every order that hasn't been picked up yet, earliest pickup date first."""
+    orders = (
+        Order.query.join(PickupSlot)
+        .filter(Order.status_step < 3)
+        .order_by(PickupSlot.slot_date.asc(), PickupSlot.id.asc())
+        .all()
+    )
+    completed_orders = (
+        Order.query.filter(Order.status_step == 3)
+        .order_by(Order.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    return render_template("admin_orders.html", orders=orders, completed_orders=completed_orders)
+
+
+@app.route("/admin/order/<int:order_id>/payment", methods=["POST"])
+@admin_required
+def admin_toggle_payment_status(order_id):
+    """Flips an order between Paid and Unpaid."""
+    order = Order.query.get_or_404(order_id)
+    order.payment_status = "Paid" if order.payment_status != "Paid" else "Unpaid"
+    db.session.commit()
+    flash(f"Order #{order.id} marked as {order.payment_status}.", "success")
+    return redirect(url_for("admin_orders"))
+
+
+@app.route("/admin/order/<int:order_id>/status", methods=["POST"])
+@admin_required
+def admin_update_order_status(order_id):
+    """Moves an order to a new milestone (Accepted / Preparing / Ready / Picked Up)."""
+    order = Order.query.get_or_404(order_id)
+    new_step = request.form.get("status_step", type=int)
+
+    if new_step is None:
+        flash("Invalid status update.", "error")
+        return redirect(url_for("admin_orders"))
+
+    final_step = len(Order.STATUS_LABELS) - 1
+
+    # Don't allow "Picked Up" until the order has been marked Paid.
+    if new_step == final_step and order.payment_status != "Paid":
+        flash(
+            f"Order #{order.id} is still marked Unpaid. Please confirm the "
+            "bank transfer / PayID payment before marking it as Picked Up.",
+            "error",
+        )
+        return redirect(url_for("admin_orders"))
+
+    previous_step = order.status_step
+    order.update_status(new_step)
+    db.session.commit()
+
+    customer = User.query.get(order.customer_id)
+
+    # Email the customer when the order becomes ready for pickup (place here)
+    
+
+    # Email a thank-you once the order is fully picked up (place here)
+    
+    flash(f"Order #{order.id} updated to '{order.status_label()}'.", "success")
+    return redirect(url_for("admin_orders"))
+
+@app.route("/admin/order/<int:order_id>/item/<int:item_id>/cancel", methods=["POST"])
+@admin_required
+def admin_toggle_item_cancellation(order_id, item_id):
+    """
+    Removes (or restores) ONE dish from an order, e.g. because it sold
+    out. Updates the order total, adjusts inventory, toggles dish availability, 
+    and emails the customer either way.
+    """
+    order = Order.query.get_or_404(order_id)
+    item = OrderItem.query.filter_by(id=item_id, order_id=order.id).first_or_404()
+    customer = User.query.get(order.customer_id)
+
+    item.is_cancelled = not item.is_cancelled
+
+    # Ensure we grab the actual MenuItem record from the foreign key
+    menu_item = MenuItem.query.get(item.menu_item_id)
+
+    if item.is_cancelled:
+        # 1. Mark the dish as sold out on the menu so future customers can't order it
+        if menu_item:
+            menu_item.is_available = False
+
+    else:
+        # If restored, make the dish available on the menu again
+        if menu_item:
+            menu_item.is_available = True
+
+
+    order.calculate_total_amount()
+    db.session.commit()
+
+    if item.is_cancelled:
+        #send email place here
+
+        flash(f"'{item.item_name}' removed from Order #{order.id} and marked as Sold Out.", "success")
+    else:
+        #send email place here
+        flash(f"'{item.item_name}' restored to Order #{order.id}.", "success")
+
+    return redirect(url_for("admin_menu"))
 
 if __name__ == "__main__":
     with app.app_context():
