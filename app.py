@@ -1,17 +1,15 @@
 import os
 import re
-import smtplib
 import threading
 import uuid
 import calendar
 from datetime import date, datetime, timedelta
-from email.mime.text import MIMEText
 from functools import wraps
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
-from models import MenuItem, Order, OrderItem, PickupSlot, User, db
+from models import MenuItem, Order, OrderItem, PickupSlot, User, db, Expense
 
 
 app = Flask(__name__)
@@ -65,7 +63,7 @@ def login_required(view_function):
 
     return wrapper
 
-# admin required function
+# Admin required function
 def admin_required(view_function):
     @wraps(view_function)
     def wrapper(*args, **kwargs):
@@ -89,9 +87,9 @@ def home():
         current_year=datetime.now().year
     )
 
-#images
+# Images
 def save_menu_image(file_storage):
-    """Saves an uploaded photo and returns its new URL, or None if no file was given."""
+    # Saves an uploaded photo and returns its new URL, or None if no file was given
     if not file_storage or file_storage.filename == "":
         return None
 
@@ -99,14 +97,14 @@ def save_menu_image(file_storage):
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
         raise ValueError("Unsupported file type. Please upload a PNG, JPG, JPEG, GIF, or WEBP image.")
 
-    # Add a random prefix so two people uploading "naan.jpg" don't overwrite each other.
+    # Add a random prefix so two people uploading images with same name don't overwrite each other
     unique_name = f"{uuid.uuid4().hex}_{secure_filename(file_storage.filename)}"
     file_storage.save(os.path.join(UPLOAD_FOLDER, unique_name))
     return f"/static/images/menu/{unique_name}"
 
 
 def delete_menu_image(image_url):
-    """Deletes a previously uploaded photo file, if this URL points to one."""
+    # Deletes a previously uploaded photo file, if this URL points to one
     if not image_url or not image_url.startswith("/static/images/menu/"):
         return  # It's an external URL (or empty) -- nothing to delete.
     file_path = os.path.join(UPLOAD_FOLDER, image_url.rsplit("/", 1)[-1])
@@ -114,7 +112,7 @@ def delete_menu_image(image_url):
         os.remove(file_path)
 
 
-# Login Home Route
+# Home Route
 @app.route("/home2")
 @login_required
 def home2():
@@ -223,12 +221,12 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for("home"))
 
-# customer pages
-# customer menu
+# Customer pages
+# Customer menu
 @app.route("/menu")
 @login_required
 def menu():
-    """Shows every available dish. Supports a search box and dietary filters."""
+    # Shows every available dish. Supports a search box and dietary filters
     query_text = request.args.get("q", "").strip()
     selected_diets = request.args.getlist("diet")
 
@@ -254,14 +252,14 @@ def menu():
     items = items_query.order_by(MenuItem.category, MenuItem.name).all()
     return render_template("menu.html", items=items, query_text=query_text, selected_diets=selected_diets)
 
-# customer menu item
+# Customer menu item
 @app.route("/menu/<int:item_id>")
 @login_required
 def item_detail(item_id):
     item = MenuItem.query.get_or_404(item_id)
     return render_template("item_detail.html", item=item)
 
-# cart
+# Cart
 def get_cart():
     return session.setdefault("cart", {})
 
@@ -280,7 +278,7 @@ def cart():
         details.append({"item": item, "quantity": qty, "subtotal": subtotal})
     return render_template("cart.html", details=details, total=total)
 
-#add ot cart
+# Add to cart
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
 @login_required
 def add_to_cart(item_id):
@@ -296,7 +294,7 @@ def add_to_cart(item_id):
     flash(f"Added {item.name} to your cart.", "success")
     return redirect(request.referrer or url_for("menu"))
 
-#remove form cart
+# Remove form cart
 @app.route("/cart/remove/<int:item_id>", methods=["POST"])
 @login_required
 def remove_from_cart(item_id):
@@ -306,7 +304,7 @@ def remove_from_cart(item_id):
     flash("Item removed from cart.", "success")
     return redirect(url_for("cart"))
 
-#update cart
+# Update cart
 @app.route("/cart/update/<int:item_id>", methods=["POST"])
 @login_required
 def update_cart(item_id):
@@ -335,8 +333,7 @@ def profile():
     return render_template("profile.html", user=user, orders=orders)
 
 
-#track order
-# In app.py
+# Track order
 @app.route("/track")
 @app.route("/track/<int:order_id>")
 @login_required
@@ -368,7 +365,7 @@ def track(order_id=None):
 
 @app.route("/api/order/<int:order_id>/status")
 def api_order_status(order_id):
-    """Polled every few seconds by track.html to animate the progress bar."""
+    # Polled every few seconds by track.html to animate the progress bar
     order = Order.query.get_or_404(order_id)
 
     if session.get("account_type") != "admin" and order.customer_id != session.get("user_id"):
@@ -381,7 +378,7 @@ def api_order_status(order_id):
         "total_steps": len(Order.STATUS_LABELS),
     })
 
-# checkout
+# Checkout
 @app.route("/checkout", methods=["GET", "POST"])
 @login_required
 def checkout():
@@ -390,7 +387,7 @@ def checkout():
         flash("Your cart is empty.", "error")
         return redirect(url_for("menu"))
 
-    # only offer slots for today and the next 7 days
+    # Only offer slots for today and the next 7 days
     today = date.today()
     upcoming_dates = [today + timedelta(days=i) for i in range(8)]
     slots = (
@@ -410,12 +407,12 @@ def checkout():
             flash("That pickup slot no longer exists.", "error")
             return render_template("checkout.html", slots=slots, today=today)
 
-        # Check the slot isn't already full.
+        # Check the slot isn't already full
         if slot.current_booking_count() >= MAX_BOOKINGS_PER_SLOT:
             flash("Sorry, that pickup window just filled up. Please choose another.", "error")
             return render_template("checkout.html", slots=slots, today=today)
 
-        # Build the order.
+        # Build the order
         order = Order(customer_id=session["user_id"], pickup_slot_id=slot.id)
         db.session.add(order)
 
@@ -430,13 +427,11 @@ def checkout():
         order.calculate_total_amount()
         db.session.commit()
 
-        # Empty the cart now that the order has been placed.
+        # Empty the cart now that the order has been placed
         session["cart"] = {}
         session.modified = True
 
         customer = User.query.get(session["user_id"])
-
-        # send email place here
 
         flash("Order placed! Track its progress below.", "success")
         return redirect(url_for("track", order_id=order.id))
@@ -445,7 +440,7 @@ def checkout():
 
 @app.route("/api/slots")
 def api_slot_availability():
-    """Lets checkout.html grey out full pickup windows without reloading the page."""
+    # Lets checkout.html grey out full pickup windows without reloading the page
     slots = PickupSlot.query.filter_by(is_active=True).all()
     payload = []
     for slot in slots:
@@ -458,21 +453,21 @@ def api_slot_availability():
 
 
 
-# admin pages
-# admin home
+# Admin pages
+# Admin home
 @app.route("/admin/home")
 @admin_required
 def admin_home():
     return render_template("admin_home.html")
 
-#admin profile
+# Admin profile
 @app.route("/admin/profile")
 @admin_required
 def admin_profile():
     user = User.query.get_or_404(session["user_id"])
     return render_template("admin_profile.html", user=user)
 
-# admin menu
+# Admin menu
 @app.route("/admin/menu")
 @admin_required
 def admin_menu():
@@ -560,7 +555,7 @@ def admin_edit_menu_item(item_id):
         image_url = request.form.get("image_url", "").strip()
         new_image_url = uploaded_url or image_url or None
         if new_image_url and new_image_url != item.image_url:
-            delete_menu_image(item.image_url)  # deletes the old photo if stored locally
+            delete_menu_image(item.image_url)  # Deletes the old photo if stored locally
             item.image_url = new_image_url
 
 
@@ -586,17 +581,382 @@ def admin_delete_menu_item(item_id):
     flash(f"{item.name} removed from the menu.", "success")
     return redirect(url_for("admin_menu"))
 
-# admin reports
+# Admin reports
+# Add expenses
+@app.route("/admin/expenses/add", methods=["POST"])
+@admin_required
+def add_expense():
+  # Handles form submission to add a new business expense
+  description = request.form.get("description", "").strip()
+  category = request.form.get("category", "General").strip()
+  amount_str = request.form.get("amount", "0")
+  expense_date_str = request.form.get("expense_date")
+
+  if not description or not amount_str:
+    flash("Please provide both a description and an amount.", "error")
+    return redirect(url_for("admin_reports"))
+
+  try:
+    amount = float(amount_str)
+    if amount <= 0:
+      raise ValueError()
+  except ValueError:
+    flash("Please enter a valid positive expense amount.", "error")
+    return redirect(url_for("admin_reports"))
+
+  try:
+    expense_date = (
+        datetime.strptime(expense_date_str, "%Y-%m-%d").date()
+        if expense_date_str
+        else date.today()
+    )
+  except ValueError:
+    expense_date = date.today()
+
+  new_expense = Expense(
+      description=description,
+      category=category,
+      amount=amount,
+      expense_date=expense_date,
+  )
+  db.session.add(new_expense)
+  db.session.commit()
+
+  flash("Expense logged successfully!", "success")
+  return redirect(url_for("admin_reports"))
+
+# Delete expenses
+@app.route("/admin/expenses/<int:expense_id>/delete", methods=["POST"])
+@admin_required
+def delete_expense(expense_id):
+  # Deletes an expense entry from the database
+  expense = Expense.query.get_or_404(expense_id)
+  db.session.delete(expense)
+  db.session.commit()
+  flash("Expense record removed.", "info")
+  return redirect(url_for("admin_reports"))
+
+# Report
 @app.route("/admin/reports")
 @admin_required
 def admin_reports():
-    return render_template("admin_reports.html")
+  # Builds the Reports page with Revenue, Expense, and Net Profit analytics
+  period = request.args.get("period", "week")
+  if period not in ("week", "month", "year"):
+    period = "week"
+
+  selected_category = request.args.get("category", "all")
+
+  now = datetime.utcnow()
+  period_start = {
+      "week": now - timedelta(days=7),
+      "month": now - timedelta(days=30),
+      "year": now - timedelta(days=365),
+  }[period]
+  period_start_date = period_start.date()
+  period_label = {
+      "week": "Last 7 Days",
+      "month": "Last 30 Days",
+      "year": "Last 12 Months",
+  }[period]
+
+  # All existing menu item categories
+  all_categories = [
+      row[0]
+      for row in db.session.query(MenuItem.category)
+      .distinct()
+      .order_by(MenuItem.category)
+      .all()
+  ]
+
+  menu_item_meta = {
+      mi.id: {
+          "name": mi.name,
+          "category": mi.category,
+          "is_available": mi.is_available,
+      }
+      for mi in MenuItem.query.all()
+  }
+
+  # Fetch all orders created in period
+  all_orders_in_range = Order.query.filter(Order.created_at >= period_start).all()
+
+  # Filter only PAID orders for financial calculations & revenue graphs
+  orders_in_range = [
+      o for o in all_orders_in_range if o.payment_status == "Paid"
+  ]
+  unpaid_orders = [o for o in all_orders_in_range if o.payment_status != "Paid"]
+
+  order_ids = [o.id for o in orders_in_range]
+  order_created_map = {o.id: o.created_at for o in orders_in_range}
+
+  total_income = sum(o.total_price for o in orders_in_range)
+  most_purchased_item = "N/A"
+  category_totals = {}
+  top_items_sorted = []
+  item_perf = []
+  qty_by_item_name = {}
+  item_perf_acc = {}
+  order_item_rows = []
+
+  if order_ids:
+    order_item_rows = OrderItem.query.filter(
+        OrderItem.order_id.in_(order_ids), OrderItem.is_cancelled.is_(False)
+    ).all()
+
+    for oi in order_item_rows:
+      meta = menu_item_meta.get(oi.menu_item_id, {})
+      category = meta.get("category", "Uncategorised")
+      is_available = meta.get("is_available", False)
+      revenue = oi.quantity * oi.unit_price
+
+      category_totals[category] = category_totals.get(category, 0.0) + revenue
+      qty_by_item_name[oi.item_name] = (
+          qty_by_item_name.get(oi.item_name, 0) + oi.quantity
+      )
+
+      acc = item_perf_acc.setdefault(
+          oi.menu_item_id,
+          {
+              "name": oi.item_name,
+              "category": category,
+              "is_available": is_available,
+              "qty": 0,
+              "revenue": 0.0,
+          },
+      )
+      acc["qty"] += oi.quantity
+      acc["revenue"] += revenue
+
+    category_totals = {k: round(v, 2) for k, v in category_totals.items()}
+    top_items_sorted = sorted(
+        qty_by_item_name.items(), key=lambda kv: kv[1], reverse=True
+    )[:8]
+    most_purchased_item = (
+        top_items_sorted[0][0] if top_items_sorted else "N/A"
+    )
+
+    for acc in item_perf_acc.values():
+      item_perf.append({
+          "name": acc["name"],
+          "category": acc["category"],
+          "qty": acc["qty"],
+          "revenue": round(acc["revenue"], 2),
+          "is_available": acc["is_available"],
+      })
+    item_perf.sort(key=lambda r: r["revenue"], reverse=True)
+
+  # Category detail drill-down
+  category_detail = None
+  if selected_category != "all":
+    category_items = [
+        row for row in item_perf if row["category"] == selected_category
+    ]
+    category_revenue = category_totals.get(selected_category, 0.0)
+    category_detail = {
+        "category": selected_category,
+        "revenue": category_revenue,
+        "qty": sum(row["qty"] for row in category_items),
+        "pct_of_total": round(
+            (category_revenue / total_income * 100) if total_income else 0, 1
+        ),
+        "line_items": category_items,
+    }
+
+  # Breakdown rows
+  qty_by_category = {}
+  for row in item_perf:
+    qty_by_category[row["category"]] = (
+        qty_by_category.get(row["category"], 0) + row["qty"]
+    )
+
+  breakdown_rows = [
+      {
+          "category": cat,
+          "qty": qty_by_category.get(cat, 0),
+          "revenue": revenue,
+          "pct": round(
+              (revenue / total_income * 100) if total_income else 0, 1
+          ),
+      }
+      for cat, revenue in category_totals.items()
+  ]
+  breakdown_rows.sort(key=lambda r: r["revenue"], reverse=True)
+
+  # Fetch Expenses for selected period
+  expenses_in_range = Expense.query.filter(
+      Expense.expense_date >= period_start_date
+  ).all()
+  total_expenses = sum(e.amount for e in expenses_in_range)
+  net_profit = total_income - total_expenses
+
+  recent_expenses = (
+      Expense.query.order_by(Expense.expense_date.desc()).limit(15).all()
+  )
+
+  # Build Time Buckets for Charts
+  if period in ("week", "month"):
+    days_back = 6 if period == "week" else 29
+    date_format = "%a %d/%m" if period == "week" else "%d/%m"
+    bucket_keys = [
+        (now - timedelta(days=i)).date() for i in range(days_back, -1, -1)
+    ]
+    trend_labels = [k.strftime(date_format) for k in bucket_keys]
+
+    def bucket_key_for(dt):
+      if isinstance(dt, datetime):
+        return dt.date()
+      return dt
+
+  else:  # year -> 12 monthly buckets
+    buckets = []
+    y, m = now.year, now.month
+    for i in range(11, -1, -1):
+      bucket_m = m - i
+      bucket_y = y
+      while bucket_m <= 0:
+        bucket_m += 12
+        bucket_y -= 1
+      buckets.append((bucket_y, bucket_m))
+    bucket_keys = buckets
+    trend_labels = [f"{calendar.month_abbr[bm]} {by}" for by, bm in buckets]
+
+    def bucket_key_for(dt):
+      return (dt.year, dt.month)
+
+  key_to_index = {key: idx for idx, key in enumerate(bucket_keys)}
+
+  # 1. Revenue trend values (Paid orders only)
+  trend_values = [0.0] * len(bucket_keys)
+  for o in orders_in_range:
+    idx = key_to_index.get(bucket_key_for(o.created_at))
+    if idx is not None:
+      trend_values[idx] += o.total_price
+  trend_values = [round(v, 2) for v in trend_values]
+
+  # 2. Expense trend values
+  expense_values = [0.0] * len(bucket_keys)
+  for exp in expenses_in_range:
+    idx = key_to_index.get(bucket_key_for(exp.expense_date))
+    if idx is not None:
+      expense_values[idx] += exp.amount
+  expense_values = [round(v, 2) for v in expense_values]
+
+  # 3. Net Profit trend values (Paid Revenue - Expenses)
+  net_profit_values = [
+      round(rev - exp, 2) for rev, exp in zip(trend_values, expense_values)
+  ]
+
+  # Category trend lines (Paid orders only)
+  top_categories_for_trend = [
+      cat
+      for cat, _ in sorted(
+          category_totals.items(), key=lambda kv: kv[1], reverse=True
+      )
+  ][:5]
+  category_trend = {
+      cat: [0.0] * len(bucket_keys) for cat in top_categories_for_trend
+  }
+
+  if order_ids and top_categories_for_trend:
+    for oi in order_item_rows:
+      meta = menu_item_meta.get(oi.menu_item_id, {})
+      cat = meta.get("category", "Uncategorised")
+      if cat not in category_trend:
+        continue
+      order_dt = order_created_map.get(oi.order_id)
+      if order_dt is None:
+        continue
+      idx = key_to_index.get(bucket_key_for(order_dt))
+      if idx is not None:
+        category_trend[cat][idx] += oi.quantity * oi.unit_price
+
+  category_trend = {
+      cat: [round(v, 2) for v in values]
+      for cat, values in category_trend.items()
+  }
+
+  # Paid / Unpaid totals for doughnut chart
+  paid_total = round(sum(o.total_price for o in orders_in_range), 2)
+  unpaid_total = round(sum(o.total_price for o in unpaid_orders), 2)
+
+  # Monthly Trailing 12-Month Financial Summary (Paid orders only)
+  year_start = now - timedelta(days=365)
+  orders_last_year = Order.query.filter(
+      Order.created_at >= year_start, Order.payment_status == "Paid"
+  ).all()
+  expenses_last_year = Expense.query.filter(
+      Expense.expense_date >= year_start.date()
+  ).all()
+
+  monthly_pl = []
+  y, m = now.year, now.month
+  for i in range(11, -1, -1):
+    bucket_m = m - i
+    bucket_y = y
+    while bucket_m <= 0:
+      bucket_m += 12
+      bucket_y -= 1
+
+    m_orders = [
+        o
+        for o in orders_last_year
+        if o.created_at.year == bucket_y and o.created_at.month == bucket_m
+    ]
+    m_expenses = [
+        e
+        for e in expenses_last_year
+        if e.expense_date.year == bucket_y and e.expense_date.month == bucket_m
+    ]
+
+    m_income = sum(o.total_price for o in m_orders)
+    m_expense_total = sum(e.amount for e in m_expenses)
+    m_net = m_income - m_expense_total
+
+    monthly_pl.append({
+        "month": f"{calendar.month_abbr[bucket_m]} {bucket_y}",
+        "income": round(m_income, 2),
+        "expenses": round(m_expense_total, 2),
+        "net_profit": round(m_net, 2),
+    })
+
+  item_perf_chart = item_perf[:10]
+
+  return render_template(
+      "admin_reports.html",
+      period=period,
+      period_label=period_label,
+      selected_category=selected_category,
+      all_categories=all_categories,
+      category_detail=category_detail,
+      total_income=round(total_income, 2),
+      total_expenses=round(total_expenses, 2),
+      net_profit=round(net_profit, 2),
+      most_purchased_item=most_purchased_item,
+      order_count=len(orders_in_range),
+      trend_labels=trend_labels,
+      trend_values=trend_values,
+      expense_values=expense_values,
+      net_profit_values=net_profit_values,
+      category_labels=list(category_totals.keys()),
+      category_values=list(category_totals.values()),
+      category_trend=category_trend,
+      top_items_labels=[row[0] for row in top_items_sorted],
+      top_items_values=[row[1] for row in top_items_sorted],
+      paid_total=paid_total,
+      unpaid_total=unpaid_total,
+      breakdown_rows=breakdown_rows,
+      item_perf=item_perf,
+      item_perf_chart=item_perf_chart,
+      monthly_pl=monthly_pl,
+      recent_expenses=recent_expenses,
+  )
 
 # Admin View Orders
 @app.route("/admin/orders")
 @admin_required
 def admin_orders():
-    """Shows every order that hasn't been picked up yet, earliest pickup date first."""
+    # Shows every order that hasn't been picked up yet, earliest pickup date first
     orders = (
         Order.query.join(PickupSlot)
         .filter(Order.status_step < 3)
@@ -615,7 +975,7 @@ def admin_orders():
 @app.route("/admin/order/<int:order_id>/payment", methods=["POST"])
 @admin_required
 def admin_toggle_payment_status(order_id):
-    """Flips an order between Paid and Unpaid."""
+    # Flips an order between Paid and Unpaid
     order = Order.query.get_or_404(order_id)
     order.payment_status = "Paid" if order.payment_status != "Paid" else "Unpaid"
     db.session.commit()
@@ -626,7 +986,7 @@ def admin_toggle_payment_status(order_id):
 @app.route("/admin/order/<int:order_id>/status", methods=["POST"])
 @admin_required
 def admin_update_order_status(order_id):
-    """Moves an order to a new milestone (Accepted / Preparing / Ready / Picked Up)."""
+    # Moves an order to a new milestone (Accepted / Preparing / Ready / Picked Up)
     order = Order.query.get_or_404(order_id)
     new_step = request.form.get("status_step", type=int)
 
@@ -650,11 +1010,6 @@ def admin_update_order_status(order_id):
     db.session.commit()
 
     customer = User.query.get(order.customer_id)
-
-    # Email the customer when the order becomes ready for pickup (place here)
-    
-
-    # Email a thank-you once the order is fully picked up (place here)
     
     flash(f"Order #{order.id} updated to '{order.status_label()}'.", "success")
     return redirect(url_for("admin_orders"))
@@ -662,11 +1017,10 @@ def admin_update_order_status(order_id):
 @app.route("/admin/order/<int:order_id>/item/<int:item_id>/cancel", methods=["POST"])
 @admin_required
 def admin_toggle_item_cancellation(order_id, item_id):
-    """
-    Removes (or restores) ONE dish from an order, e.g. because it sold
-    out. Updates the order total, adjusts inventory, toggles dish availability, 
-    and emails the customer either way.
-    """
+
+    # Removes (or restores) ONE dish from an order, e.g. because it sold out
+    # Updates the order total, adjusts inventory, toggles dish availability
+
     order = Order.query.get_or_404(order_id)
     item = OrderItem.query.filter_by(id=item_id, order_id=order.id).first_or_404()
     customer = User.query.get(order.customer_id)
@@ -677,7 +1031,7 @@ def admin_toggle_item_cancellation(order_id, item_id):
     menu_item = MenuItem.query.get(item.menu_item_id)
 
     if item.is_cancelled:
-        # 1. Mark the dish as sold out on the menu so future customers can't order it
+        # Mark the dish as sold out on the menu so future customers can't order it
         if menu_item:
             menu_item.is_available = False
 
@@ -691,11 +1045,8 @@ def admin_toggle_item_cancellation(order_id, item_id):
     db.session.commit()
 
     if item.is_cancelled:
-        #send email place here
-
         flash(f"'{item.item_name}' removed from Order #{order.id} and marked as Sold Out.", "success")
     else:
-        #send email place here
         flash(f"'{item.item_name}' restored to Order #{order.id}.", "success")
 
     return redirect(url_for("admin_menu"))

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -158,3 +158,13 @@ class OrderItem(db.Model):
 
     def subtotal(self):
         return self.quantity * self.unit_price
+
+class Expense(db.Model):
+  __tablename__ = "expenses"
+
+  id = db.Column(db.Integer, primary_key=True)
+  description = db.Column(db.String(255), nullable=False)
+  category = db.Column(db.String(100), nullable=False, default="General")
+  amount = db.Column(db.Float, nullable=False)
+  expense_date = db.Column(db.Date, nullable=False, default=date.today)
+  created_at = db.Column(db.DateTime, default=datetime.utcnow)

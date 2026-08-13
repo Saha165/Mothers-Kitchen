@@ -1,7 +1,493 @@
 {% extends "base.html" %}
 {% block title %}Reports - Mother's Kitchen{% endblock %}
 
-{% block content %}
-<p>ur reports!!! take ur time plz</p>
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+{% endblock %}
 
+{% block content %}
+<section class="admin-page">
+    <div class="admin-page-header">
+        <h1>Weekly Analytics &amp; Business Reporting</h1>
+    </div>
+
+    <div class="period-tabs">
+        <a href="{{ url_for('admin_reports', period='week', category=selected_category) }}" class="period-tab {{ 'period-tab-active' if period == 'week' else '' }}">Weekly</a>
+        <a href="{{ url_for('admin_reports', period='month', category=selected_category) }}" class="period-tab {{ 'period-tab-active' if period == 'month' else '' }}">Monthly</a>
+        <a href="{{ url_for('admin_reports', period='year', category=selected_category) }}" class="period-tab {{ 'period-tab-active' if period == 'year' else '' }}">Yearly</a>
+    </div>
+
+    <p class="subtle">Showing {{ period_label }} &mdash; based on {{ order_count }} order(s).</p>
+
+    <!-- Top Key Metrics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">Total Revenue</span>
+            <span class="stat-value">${{ total_income }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Expenses</span>
+            <span class="stat-value" style="color: #a15252;">${{ total_expenses }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Net Profit</span>
+            <span class="stat-value" style="color: {{ '#7a8450' if net_profit >= 0 else '#8f1d21' }};">
+                ${{ net_profit }}
+            </span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Most Purchased Item</span>
+            <span class="stat-value stat-value-text">{{ most_purchased_item }}</span>
+        </div>
+    </div>
+
+    {% if order_count == 0 %}
+        <p class="empty-state">No orders in this period yet &mdash; charts will populate once orders come in.</p>
+    {% endif %}
+
+    <!-- Primary Overview Charts -->
+    <div class="charts-grid">
+        <div class="chart-card chart-card-wide">
+            <h3>Sales Revenue Trend</h3>
+            <canvas id="trendChart" height="110"></canvas>
+        </div>
+
+        <div class="chart-card chart-card-wide">
+            <h3>Net Profit Trend (Revenue &minus; Expenses)</h3>
+            <canvas id="netProfitChart" height="110"></canvas>
+        </div>
+
+        <div class="chart-card chart-card-wide">
+            <h3>Expense Trend</h3>
+            <canvas id="expenseTrendChart" height="110"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3>Sales by Category</h3>
+                <form method="GET" action="{{ url_for('admin_reports') }}" class="category-select-form">
+                    <input type="hidden" name="period" value="{{ period }}">
+                    <select name="category" onchange="this.form.submit()">
+                        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                        {% for cat in all_categories %}
+                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            <canvas id="categoryChart" height="220"></canvas>
+
+            {% if category_detail %}
+                <div class="category-detail-box">
+                    <p><strong>{{ category_detail.category }}</strong>: ${{ category_detail.revenue }} revenue
+                        ({{ category_detail.pct_of_total }}% of total), {{ category_detail.qty }} items sold.</p>
+                    {% if category_detail.line_items %}
+                        <table class="cart-table mini-table">
+                            <thead><tr><th>Item</th><th>Qty</th><th>Revenue</th></tr></thead>
+                            <tbody>
+                                {% for row in category_detail.line_items %}
+                                    <tr><td>{{ row.name }}</td><td>{{ row.qty }}</td><td>${{ row.revenue }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="subtle">No sales for this category in the selected period.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="chart-card">
+            <h3>Top-Selling Items (Qty)</h3>
+            <canvas id="topItemsChart" height="220"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Payment Status (Revenue)</h3>
+            <canvas id="paymentChart" height="220"></canvas>
+        </div>
+    </div>
+    <br>
+    <br>
+    <!-- Expense Logging Section -->
+    <h2 class="report-section-title">Expense Management</h2>
+    <p class="subtle">Log business expenses (e.g., packaging, gas, utilities, ingredient purchases) to compute accurate Net Profit.</p>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Log New Expense</h3>
+            <form method="POST" action="{{ url_for('add_expense') }}" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                <div>
+                    <label for="exp_description" style="font-weight: 600; display: block; margin-bottom: 4px;">Description / Item</label>
+                    <input type="text" id="exp_description" name="description" placeholder="e.g. Takeaway containers & packaging" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="exp_category" style="font-weight: 600; display: block; margin-bottom: 4px;">Category</label>
+                    <select id="exp_category" name="category" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="Packaging">Packaging</option>
+                        <option value="Ingredients">Ingredients & Supplies</option>
+                        <option value="Utilities">Utilities & Gas</option>
+                        <option value="Equipment">Equipment & Maintenance</option>
+                        <option value="General" selected>General Expense</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="exp_amount" style="font-weight: 600; display: block; margin-bottom: 4px;">Amount ($)</label>
+                    <input type="number" id="exp_amount" name="amount" step="0.01" min="0.01" placeholder="0.00" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="exp_date" style="font-weight: 600; display: block; margin-bottom: 4px;">Date Incurred</label>
+                    <input type="date" id="exp_date" name="expense_date" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <button type="submit" class="button" style="margin-top: 8px; cursor: pointer;">Add Expense Record</button>
+            </form>
+        </div>
+
+        <div class="chart-card chart-card-wide">
+            <h3>Recent Expense Logs</h3>
+            {% if recent_expenses %}
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in recent_expenses %}
+                            <tr>
+                                <td>{{ exp.expense_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ exp.description }}</td>
+                                <td>{{ exp.category }}</td>
+                                <td>${{ '%.2f'|format(exp.amount) }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_expense', expense_id=exp.id) }}" onsubmit="return confirm('Delete this expense?');" style="margin: 0;">
+                                        <button type="submit" style="background: none; border: none; color: #8f1d21; text-decoration: underline; cursor: pointer; padding: 0;">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-state">No expenses logged yet. Add your first expense on the left!</p>
+            {% endif %}
+        </div>
+    </div>
+    <br>
+    <br>
+    <!-- Sales Breakdown Report -->
+    <h2 class="report-section-title">Sales Breakdown Report</h2>
+    <p class="subtle">Revenue and quantity sold per category for {{ period_label|lower }}.</p>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Revenue Share by Category</h3>
+            <canvas id="breakdownPieChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Revenue by Category</h3>
+            <canvas id="breakdownBarChart" height="220"></canvas>
+        </div>
+        <div class="chart-card chart-card-wide">
+            <h3>Category Revenue Trend</h3>
+            <canvas id="breakdownLineChart" height="110"></canvas>
+        </div>
+    </div>
+    <br>
+    {% if breakdown_rows %}
+        <table class="cart-table">
+            <thead>
+                <tr><th>Category</th><th>Qty Sold</th><th>Revenue</th><th>% of Total Revenue</th></tr>
+            </thead>
+            <tbody>
+                {% for row in breakdown_rows %}
+                    <tr>
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.qty }}</td>
+                        <td>${{ row.revenue }}</td>
+                        <td>{{ row.pct }}%</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No sales to break down for this period yet.</p>
+    {% endif %}
+    <br>
+    <br>
+    <!-- Menu Item Performance Report -->
+    <h2 class="report-section-title">Menu Item Performance Report</h2>
+    <p class="subtle">Every dish sold during {{ period_label|lower }}, ranked by revenue.</p>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Revenue Share by Item (Top 10)</h3>
+            <canvas id="itemPerfPieChart" height="220"></canvas>
+        </div>
+        <div class="chart-card chart-card-wide">
+            <h3>Revenue by Item (Top 10)</h3>
+            <canvas id="itemPerfBarChart" height="110"></canvas>
+        </div>
+    </div>
+    <br>
+    {% if item_perf %}
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Item</th><th>Category</th><th>Qty Sold</th><th>Revenue</th><th>Availability</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in item_perf %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.qty }}</td>
+                        <td>${{ row.revenue }}</td>
+                        <td>
+                            <span class="payment-pill {{ 'payment-paid' if row.is_available else 'payment-unpaid' }}">
+                                {{ 'Available' if row.is_available else 'Sold Out' }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No items sold in this period yet.</p>
+    {% endif %}
+    
+    <br>
+    <br>
+    <!-- Trailing 12-Month Financial Summary -->
+    <h2 class="report-section-title">Trailing 12-Month Financial Performance</h2>
+    <p class="subtle">Always shows the trailing 12 months (Revenue, Expenses &amp; Net Profit).</p>
+
+    <div class="charts-grid">
+        <div class="chart-card chart-card-wide">
+            <h3>12-Month Financial Comparison</h3>
+            <canvas id="monthlyPLBarChart" height="140"></canvas>
+        </div>
+    </div>
+    <br>
+    <table class="cart-table">
+        <thead>
+            <tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net Profit</th></tr>
+        </thead>
+        <tbody>
+            {% for row in monthly_pl %}
+                <tr>
+                    <td>{{ row.month }}</td>
+                    <td>${{ row.income }}</td>
+                    <td>${{ row.expenses }}</td>
+                    <td style="color: {{ '#7a8450' if row.net_profit >= 0 else '#8f1d21' }}; font-weight: bold;">
+                        ${{ row.net_profit }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<script>
+    // Data computed server-side in blueprints/admin.py::reports()
+    const trendLabels = {{ trend_labels | tojson }};
+    const trendValues = {{ trend_values | tojson }};
+    const expenseValues = {{ expense_values | tojson }};
+    const netProfitValues = {{ net_profit_values | tojson }};
+
+    const categoryLabels = {{ category_labels | tojson }};
+    const categoryValues = {{ category_values | tojson }};
+    const categoryTrend = {{ category_trend | tojson }};
+    const topItemsLabels = {{ top_items_labels | tojson }};
+    const topItemsValues = {{ top_items_values | tojson }};
+    const paidTotal = {{ paid_total | tojson }};
+    const unpaidTotal = {{ unpaid_total | tojson }};
+
+    const itemPerfChart = {{ item_perf_chart | tojson }};
+    const monthlyPl = {{ monthly_pl | tojson }};
+
+    const palette = ['#8f1d21', '#f2777a', '#f4b183', '#7a8450', '#c9a15a', '#5c7a99', '#a15252', '#4a1414'];
+    const colorsFor = (n) => Array.from({ length: n }, (_, i) => palette[i % palette.length]);
+
+    // Set today's date into the expense form default value
+    document.addEventListener("DOMContentLoaded", () => {
+        const expDateInput = document.getElementById("exp_date");
+        if (expDateInput && !expDateInput.value) {
+            expDateInput.value = new Date().toISOString().split('T')[0];
+        }
+    });
+
+    function renderReportCharts() {
+        Chart.defaults.font.family = "'Nunito Sans', sans-serif";
+        Chart.defaults.color = '#2c2620';
+        Chart.defaults.plugins.legend.display = true;
+        Chart.defaults.plugins.legend.position = 'bottom';
+
+        // Revenue Trend Chart
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Sales Revenue ($)',
+                    data: trendValues,
+                    borderColor: '#8f1d21',
+                    backgroundColor: 'rgba(143, 29, 33, 0.12)',
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#8f1d21',
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        // Net Profit Trend Chart (Bar chart handling negative profit values gracefully)
+        new Chart(document.getElementById('netProfitChart'), {
+            type: 'bar',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Net Profit ($)',
+                    data: netProfitValues,
+                    backgroundColor: netProfitValues.map(v => v >= 0 ? 'rgba(122, 132, 80, 0.75)' : 'rgba(143, 29, 33, 0.75)'),
+                    borderColor: netProfitValues.map(v => v >= 0 ? '#7a8450' : '#8f1d21'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        grid: {
+                            color: (ctx) => ctx.tick.value === 0 ? '#2c2620' : 'rgba(0,0,0,0.06)',
+                            lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Expense Trend Chart
+        new Chart(document.getElementById('expenseTrendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Expenses ($)',
+                    data: expenseValues,
+                    borderColor: '#a15252',
+                    backgroundColor: 'rgba(161, 82, 82, 0.12)',
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#a15252',
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        // Sales by Category
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'pie',
+            data: {
+                labels: categoryLabels,
+                datasets: [{ label: 'Revenue ($)', data: categoryValues, backgroundColor: colorsFor(categoryValues.length) }]
+            },
+        });
+
+        // Top Items Chart
+        new Chart(document.getElementById('topItemsChart'), {
+            type: 'bar',
+            data: {
+                labels: topItemsLabels,
+                datasets: [{ label: 'Quantity Sold', data: topItemsValues, backgroundColor: colorsFor(topItemsValues.length) }]
+            },
+            options: {
+                indexAxis: 'y',
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+
+        // Payment Status
+        new Chart(document.getElementById('paymentChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Paid', 'Unpaid'],
+                datasets: [{ label: 'Revenue ($)', data: [paidTotal, unpaidTotal], backgroundColor: ['#7a8450', '#8f1d21'] }]
+            },
+        });
+
+        // Sales Breakdown Charts
+        new Chart(document.getElementById('breakdownPieChart'), {
+            type: 'pie',
+            data: { labels: categoryLabels, datasets: [{ label: 'Revenue ($)', data: categoryValues, backgroundColor: colorsFor(categoryValues.length) }] },
+        });
+
+        new Chart(document.getElementById('breakdownBarChart'), {
+            type: 'bar',
+            data: { labels: categoryLabels, datasets: [{ label: 'Revenue ($)', data: categoryValues, backgroundColor: colorsFor(categoryValues.length) }] },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        new Chart(document.getElementById('breakdownLineChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: Object.keys(categoryTrend).map((cat, i) => ({
+                    label: cat,
+                    data: categoryTrend[cat],
+                    borderColor: palette[i % palette.length],
+                    backgroundColor: palette[i % palette.length],
+                    tension: 0.3,
+                    fill: false,
+                }))
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        // Menu Item Performance Charts
+        const itemPerfLabels = itemPerfChart.map(r => r.name);
+        new Chart(document.getElementById('itemPerfPieChart'), {
+            type: 'pie',
+            data: { labels: itemPerfLabels, datasets: [{ label: 'Revenue ($)', data: itemPerfChart.map(r => r.revenue), backgroundColor: colorsFor(itemPerfChart.length) }] },
+        });
+
+        new Chart(document.getElementById('itemPerfBarChart'), {
+            type: 'bar',
+            data: { labels: itemPerfLabels, datasets: [{ label: 'Revenue ($)', data: itemPerfChart.map(r => r.revenue), backgroundColor: colorsFor(itemPerfChart.length) }] },
+            options: {
+                indexAxis: 'y',
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+
+        // Monthly Trailing 12-Month Financial Comparison Chart
+        new Chart(document.getElementById('monthlyPLBarChart'), {
+            type: 'bar',
+            data: {
+                labels: monthlyPl.map(r => r.month),
+                datasets: [
+                    { label: 'Revenue ($)', data: monthlyPl.map(r => r.income), backgroundColor: '#7a8450' },
+                    { label: 'Expenses ($)', data: monthlyPl.map(r => r.expenses), backgroundColor: '#a15252' },
+                    { label: 'Net Profit ($)', data: monthlyPl.map(r => r.net_profit), backgroundColor: '#8f1d21' }
+                ]
+            },
+            options: { scales: { y: { beginAtZero: false } } }
+        });
+    }
+
+    if (typeof Chart === 'undefined') {
+        document.querySelectorAll('.chart-card canvas').forEach((canvas) => {
+            const notice = document.createElement('p');
+            notice.className = 'empty-state';
+            notice.textContent = 'Charts could not load (Chart.js failed to load from the CDN). Check your internet connection and refresh.';
+            canvas.replaceWith(notice);
+        });
+    } else {
+        try {
+            renderReportCharts();
+        } catch (err) {
+            console.error('Report chart rendering failed:', err);
+        }
+    }
+</script>
 {% endblock %}
