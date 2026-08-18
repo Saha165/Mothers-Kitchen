@@ -30,12 +30,10 @@
                                         <span>{{ item.quantity }} &times; {{ item.item_name }}</span>
                                         {% if item.is_cancelled %}
                                             <span class="item-status-tag">Unavailable</span>
-                                            <!-- ✅ FIXED: Points to admin_toggle_item_cancellation -->
                                             <form method="POST" action="{{ url_for('admin_toggle_item_cancellation', order_id=order.id, item_id=item.id) }}" class="inline-form">
                                                 <button type="submit" class="btn-link">Restore</button>
                                             </form>
                                         {% else %}
-                                            <!-- ✅ FIXED: Points to admin_toggle_item_cancellation -->
                                             <form method="POST" action="{{ url_for('admin_toggle_item_cancellation', order_id=order.id, item_id=item.id) }}" class="inline-form"
                                                 onsubmit="return confirm('Mark {{ item.item_name }} as unavailable and remove it from this order? The customer will be notified.');">
                                                 <button type="submit" class="btn-link remove-link">Cancel Item</button>

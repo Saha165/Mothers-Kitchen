@@ -17,7 +17,7 @@
         <a href="{{ url_for('admin_reports', period='year', category=selected_category) }}" class="period-tab {{ 'period-tab-active' if period == 'year' else '' }}">Yearly</a>
     </div>
 
-    <p class="subtle">Showing {{ period_label }} &mdash; based on {{ order_count }} order(s).</p>
+    <p class="report-report-subtle">Showing {{ period_label }} &mdash; based on {{ order_count }} order(s).</p>
 
     <!-- Top Key Metrics Cards -->
     <div class="stats-grid">
@@ -48,23 +48,23 @@
     <!-- Primary Overview Charts -->
     <div class="charts-grid">
         <div class="chart-card chart-card-wide">
-            <h3>Sales Revenue Trend</h3>
+            <h4>Sales Revenue Trend</h4>
             <canvas id="trendChart" height="110"></canvas>
         </div>
 
         <div class="chart-card chart-card-wide">
-            <h3>Net Profit Trend (Revenue &minus; Expenses)</h3>
+            <h4>Net Profit Trend (Revenue &minus; Expenses)</h4>
             <canvas id="netProfitChart" height="110"></canvas>
         </div>
 
         <div class="chart-card chart-card-wide">
-            <h3>Expense Trend</h3>
+            <h4>Expense Trend</h4>
             <canvas id="expenseTrendChart" height="110"></canvas>
         </div>
 
         <div class="chart-card">
             <div class="chart-card-header">
-                <h3>Sales by Category</h3>
+                <h4>Sales by Category</h4>
                 <form method="GET" action="{{ url_for('admin_reports') }}" class="category-select-form">
                     <input type="hidden" name="period" value="{{ period }}">
                     <select name="category" onchange="this.form.submit()">
@@ -91,31 +91,31 @@
                             </tbody>
                         </table>
                     {% else %}
-                        <p class="subtle">No sales for this category in the selected period.</p>
+                        <p class="report-subtle">No sales for this category in the selected period.</p>
                     {% endif %}
                 </div>
             {% endif %}
         </div>
 
         <div class="chart-card">
-            <h3>Top-Selling Items (Qty)</h3>
+            <h4>Top-Selling Items (Qty)</h4>
             <canvas id="topItemsChart" height="220"></canvas>
         </div>
 
         <div class="chart-card">
-            <h3>Payment Status (Revenue)</h3>
+            <h4>Payment Status (Revenue)</h4>
             <canvas id="paymentChart" height="220"></canvas>
         </div>
     </div>
     <br>
     <br>
     <!-- Expense Logging Section -->
-    <h2 class="report-section-title">Expense Management</h2>
-    <p class="subtle">Log business expenses (e.g., packaging, gas, utilities, ingredient purchases) to compute accurate Net Profit.</p>
+    <h1 class="report-section-title">Expense Management</h1>
+    <p class="report-subtle">Log business expenses (e.g., packaging, gas, utilities, ingredient purchases) to compute accurate Net Profit.</p>
 
     <div class="charts-grid">
         <div class="chart-card">
-            <h3>Log New Expense</h3>
+            <h4>Log New Expense</h4>
             <form method="POST" action="{{ url_for('add_expense') }}" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
                 <div>
                     <label for="exp_description" style="font-weight: 600; display: block; margin-bottom: 4px;">Description / Item</label>
@@ -144,7 +144,7 @@
         </div>
 
         <div class="chart-card chart-card-wide">
-            <h3>Recent Expense Logs</h3>
+            <h4>Recent Expense Logs</h4>
             {% if recent_expenses %}
                 <table class="cart-table">
                     <thead>
@@ -176,20 +176,20 @@
     <br>
     <br>
     <!-- Sales Breakdown Report -->
-    <h2 class="report-section-title">Sales Breakdown Report</h2>
-    <p class="subtle">Revenue and quantity sold per category for {{ period_label|lower }}.</p>
+    <h1 class="report-section-title">Sales Breakdown Report</h1>
+    <p class="report-subtle">Revenue and quantity sold per category for {{ period_label|lower }}.</p>
 
     <div class="charts-grid">
         <div class="chart-card">
-            <h3>Revenue Share by Category</h3>
+            <h4>Revenue Share by Category</h4>
             <canvas id="breakdownPieChart" height="220"></canvas>
         </div>
         <div class="chart-card">
-            <h3>Revenue by Category</h3>
+            <h4>Revenue by Category</h4>
             <canvas id="breakdownBarChart" height="220"></canvas>
         </div>
         <div class="chart-card chart-card-wide">
-            <h3>Category Revenue Trend</h3>
+            <h4>Category Revenue Trend</h4>
             <canvas id="breakdownLineChart" height="110"></canvas>
         </div>
     </div>
@@ -216,16 +216,16 @@
     <br>
     <br>
     <!-- Menu Item Performance Report -->
-    <h2 class="report-section-title">Menu Item Performance Report</h2>
-    <p class="subtle">Every dish sold during {{ period_label|lower }}, ranked by revenue.</p>
+    <h1 class="report-section-title">Menu Item Performance Report</h1>
+    <p class="report-subtle">Every dish sold during {{ period_label|lower }}, ranked by revenue.</p>
 
     <div class="charts-grid">
         <div class="chart-card">
-            <h3>Revenue Share by Item (Top 10)</h3>
+            <h4>Revenue Share by Item (Top 10)</h4>
             <canvas id="itemPerfPieChart" height="220"></canvas>
         </div>
         <div class="chart-card chart-card-wide">
-            <h3>Revenue by Item (Top 10)</h3>
+            <h4>Revenue by Item (Top 10)</h4>
             <canvas id="itemPerfBarChart" height="110"></canvas>
         </div>
     </div>
@@ -260,12 +260,12 @@
     <br>
     <br>
     <!-- Trailing 12-Month Financial Summary -->
-    <h2 class="report-section-title">Trailing 12-Month Financial Performance</h2>
-    <p class="subtle">Always shows the trailing 12 months (Revenue, Expenses &amp; Net Profit).</p>
+    <h1 class="report-section-title">12-Month Financial Performance</h1>
+    <p class="report-subtle">Always shows the trailing 12 months (Revenue, Expenses &amp; Net Profit).</p>
 
     <div class="charts-grid">
         <div class="chart-card chart-card-wide">
-            <h3>12-Month Financial Comparison</h3>
+            <h4>12-Month Financial Comparison</h4>
             <canvas id="monthlyPLBarChart" height="140"></canvas>
         </div>
     </div>
